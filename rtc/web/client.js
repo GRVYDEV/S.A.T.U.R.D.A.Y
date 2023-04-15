@@ -10,12 +10,18 @@ export class Client {
 
     this.sub = new RTCPeerConnection(configuration);
     this.pub = new RTCPeerConnection(configuration);
+    this.pubAns = false;
+    this.pubCandidates = [];
 
     this.pub.onicecandidate = (e) => {
       const { candidate } = e;
       if (candidate) {
         console.log("[pub] ice candidate");
-        this.trickle(candidate, 0);
+        if (this.pubAns) {
+          this.trickle(candidate, 0);
+        } else {
+          this.pubCandidates.push(candidate);
+        }
       }
     };
 
@@ -25,9 +31,13 @@ export class Client {
     };
   }
 
-  async socketConnect() {
+  async socketConnect(tester = false) {
     return new Promise((resolve) => {
-      this.socket = new WebSocket("ws://localhost:8080/ws");
+      let url = "ws://localhost:8080/ws";
+      if (tester) {
+        url = "ws://host.docker.internal:8080/ws";
+      }
+      this.socket = new WebSocket(url);
 
       // Event listener for when the WebSocket connection is opened
       this.socket.addEventListener("open", (event) => {
@@ -36,8 +46,18 @@ export class Client {
       });
 
       // Event listener for when a message is received over the WebSocket
-      this.socket.addEventListener("message", (event) => {
-        console.log(`WebSocket message received: ${event.data}`);
+      this.socket.addEventListener("message", async (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`WebSocket message received: ${data}`, data);
+        const { result } = data;
+        if (result && result.type === "answer") {
+          console.log("setting ans");
+          await this.pub.setRemoteDescription(data.result);
+          this.pubAns = true;
+          this.pubCandidates.forEach((candidate) => {
+            this.trickle(candidate, 0);
+          });
+        }
       });
 
       // Event listener for when the WebSocket connection is closed
@@ -53,11 +73,21 @@ export class Client {
   }
 
   async join() {
+    const queryString = window.location.search;
+    const params = new URLSearchParams(queryString);
+    const room = params.get("room") || "foo";
+    const noSub = params.get("noSub") || false;
     await this.socketConnect();
     const join = {
-      sid: "foo",
+      sid: room,
       uid: generateRandomString(10),
     };
+    if (noSub) {
+      join.config = {
+        NoSubscribe: true,
+        NoAutoSubscribe: true,
+      };
+    }
     const msg = {
       method: "join",
       params: join,

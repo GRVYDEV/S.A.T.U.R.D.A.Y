@@ -63,7 +63,7 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			break
 		}
 
-		join.Config = defaultConfig
+		c.Logger.Info(fmt.Sprintf("Join msg %+v", join.Config))
 
 		c.OnOffer = func(offer *webrtc.SessionDescription) {
 			if err := conn.Notify(ctx, "offer", offer); err != nil {
@@ -125,6 +125,8 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		}
 
 	case "trickle":
+		c.Logger.Info("TRICKLE")
+		c.Logger.Info(fmt.Sprintf("PUBLISHER %+v", c.Publisher()))
 		var trickle Trickle
 		err := json.Unmarshal(*req.Params, &trickle)
 		if err != nil {
@@ -135,6 +137,7 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 
 		err = c.Trickle(trickle.Candidate, trickle.Target)
 		if err != nil {
+			c.Logger.Error(err, "error setting trickle")
 			replyError(err)
 		}
 	}

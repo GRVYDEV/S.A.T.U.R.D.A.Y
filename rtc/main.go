@@ -11,9 +11,11 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/sourcegraph/jsonrpc2"
 	websocketjsonrpc2 "github.com/sourcegraph/jsonrpc2/websocket"
+	"github.com/spf13/viper"
 )
 
 var (
+	conf   = sfu.Config{}
 	logger = log.New()
 )
 
@@ -23,10 +25,24 @@ func main() {
 
 	// build + start sfu
 
+	viper.SetConfigFile("./config.toml")
+	viper.SetConfigType("toml")
+	err := viper.ReadInConfig()
+	if err != nil {
+		logger.Error(err, "error reading config")
+		panic(err)
+	}
+
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		logger.Error(err, "error unmarshalling config")
+		panic(err)
+	}
+
 	// start websocket server
 
 	sfu.Logger = logger
-	s := sfu.NewSFU(sfu.Config{})
+	s := sfu.NewSFU(conf)
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -58,7 +74,7 @@ func main() {
 
 	// Start the server and listen on port 8080.
 	port := 8080
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil)
 	if err != nil {
 		fmt.Println(err)
 	}
