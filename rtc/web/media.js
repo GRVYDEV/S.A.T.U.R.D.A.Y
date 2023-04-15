@@ -5,6 +5,6 @@ export async function getMedia() {
       video: true,
     });
   } catch (err) {
-    console.error("error getting media", err);
+    console.error("error getting media", err.message);
   }
 }
