@@ -63,7 +63,7 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			break
 		}
 
-		c.Logger.Info(fmt.Sprintf("Join msg %+v", join.Config))
+		c.Logger.Info(fmt.Sprintf("Join msg %+v", join))
 
 		c.OnOffer = func(offer *webrtc.SessionDescription) {
 			if err := conn.Notify(ctx, "offer", offer); err != nil {
@@ -86,13 +86,14 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 			break
 		}
 
-		answer, err := c.Answer(join.Offer)
-		if err != nil {
-			replyError(err)
-			break
+		if !join.Config.NoPublish {
+			answer, err := c.Answer(join.Offer)
+			if err != nil {
+				replyError(err)
+				break
+			}
+			_ = conn.Reply(ctx, req.ID, answer)
 		}
-
-		_ = conn.Reply(ctx, req.ID, answer)
 
 	case "offer":
 		var negotiation Negotiation
@@ -125,8 +126,6 @@ func (c *Connection) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		}
 
 	case "trickle":
-		c.Logger.Info("TRICKLE")
-		c.Logger.Info(fmt.Sprintf("PUBLISHER %+v", c.Publisher()))
 		var trickle Trickle
 		err := json.Unmarshal(*req.Params, &trickle)
 		if err != nil {

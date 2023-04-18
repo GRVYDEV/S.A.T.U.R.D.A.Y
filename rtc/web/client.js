@@ -1,40 +1,66 @@
 import { generateRandomString } from "./util.js";
 
 export class Client {
-  constructor(stream) {
+  constructor(stream, noPub, noSub, room, useDockerWs) {
     const configuration = {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
 
     this.stream = stream;
+    this.noPub = noPub;
+    this.noSub = noSub;
+    this.room = room;
+    this.useDockerWs = useDockerWs;
 
-    this.sub = new RTCPeerConnection(configuration);
-    this.pub = new RTCPeerConnection(configuration);
-    this.pubAns = false;
-    this.pubCandidates = [];
-
-    this.pub.onicecandidate = (e) => {
-      const { candidate } = e;
-      if (candidate) {
-        console.log("[pub] ice candidate");
-        if (this.pubAns) {
-          this.trickle(candidate, 0);
-        } else {
-          this.pubCandidates.push(candidate);
+    if (!noPub) {
+      this.pub = new RTCPeerConnection(configuration);
+      this.pubAns = false;
+      this.pubCandidates = [];
+      this.pub.onicecandidate = (e) => {
+        const { candidate } = e;
+        if (candidate) {
+          console.log("[pub] ice candidate", JSON.stringify(candidate));
+          if (this.pubAns) {
+            this.trickle(candidate, 0);
+          } else {
+            this.pubCandidates.push(candidate);
+          }
         }
-      }
-    };
+      };
 
-    this.pub.onconnectionstatechange = (e) => {
-      const { connectionState } = this.pub;
-      console.log("[pub] connstatechange", connectionState);
-    };
+      this.pub.onconnectionstatechange = (e) => {
+        const { connectionState } = this.pub;
+        console.log("[pub] connstatechange", connectionState);
+      };
+    }
+
+    if (!noSub) {
+      this.sub = new RTCPeerConnection(configuration);
+      this.subOff = false;
+      this.subCandidates = [];
+      this.sub.onicecandidate = (e) => {
+        const { candidate } = e;
+        if (candidate) {
+          console.log("[sub] ice candidate", JSON.stringify(candidate));
+          this.trickle(candidate, 1);
+        }
+      };
+
+      this.sub.onconnectionstatechange = (e) => {
+        const { connectionState } = this.sub;
+        console.log("[sub] connstatechange", connectionState);
+      };
+
+      this.sub.ontrack = (e) => {
+        console.log("houston we have a track", e);
+      };
+    }
   }
 
-  async socketConnect(tester = false) {
+  async socketConnect() {
     return new Promise((resolve) => {
       let url = "ws://localhost:8080/ws";
-      if (tester) {
+      if (this.useDockerWs) {
         url = "ws://host.docker.internal:8080/ws";
       }
       this.socket = new WebSocket(url);
@@ -50,13 +76,43 @@ export class Client {
         const data = JSON.parse(event.data);
         console.log(`WebSocket message received: ${data}`, data);
         const { result } = data;
-        if (result && result.type === "answer") {
-          console.log("setting ans");
-          await this.pub.setRemoteDescription(data.result);
-          this.pubAns = true;
-          this.pubCandidates.forEach((candidate) => {
-            this.trickle(candidate, 0);
-          });
+        if (result) {
+          if (result.type === "answer") {
+            console.log("setting ans");
+            await this.pub.setRemoteDescription(data.result);
+            this.pubAns = true;
+            this.pubCandidates.forEach((candidate) => {
+              this.trickle(candidate, 0);
+            });
+          }
+        } else {
+          const { method, params } = data;
+          if (method) {
+            if (method === "trickle") {
+              if (params.target === 0) {
+                console.log("adding candidate for pub");
+                await this.pub.addIceCandidate(params.candidate);
+              }
+              if (params.target === 1) {
+                console.log("adding candidate for sub");
+                if (!this.subOff) {
+                  this.subCandidates.push(params.candidate);
+                } else {
+                  await this.sub.addIceCandidate(params.candidate);
+                }
+              }
+            } else if (method === "offer") {
+              console.log("setting offer");
+              await this.sub.setRemoteDescription(params);
+              const answer = await this.sub.createAnswer();
+              await this.sub.setLocalDescription(answer);
+              this.answer(answer);
+              this.subOff = true;
+              for (const candidate of this.subCandidates) {
+                await this.sub.addIceCandidate(candidate);
+              }
+            }
+          }
         }
       });
 
@@ -73,20 +129,18 @@ export class Client {
   }
 
   async join() {
-    const queryString = window.location.search;
-    const params = new URLSearchParams(queryString);
-    const room = params.get("room") || "foo";
-    const noSub = params.get("noSub") || false;
     await this.socketConnect();
     const join = {
-      sid: room,
+      sid: this.room,
       uid: generateRandomString(10),
+      config: {},
     };
-    if (noSub) {
-      join.config = {
-        NoSubscribe: true,
-        NoAutoSubscribe: true,
-      };
+    if (this.noSub) {
+      join.config.NoSubscribe = true;
+      join.config.NoAutoSubscribe = true;
+    }
+    if (this.noPub) {
+      join.config.NoPublish = true;
     }
     const msg = {
       method: "join",
@@ -99,10 +153,12 @@ export class Client {
       });
     }
 
-    const offer = await this.pub.createOffer();
-    await this.pub.setLocalDescription(offer);
+    if (!this.noPub) {
+      const offer = await this.pub.createOffer();
+      await this.pub.setLocalDescription(offer);
 
-    msg.params.offer = offer;
+      msg.params.offer = offer;
+    }
 
     this.socket.send(JSON.stringify(msg));
   }
@@ -117,5 +173,11 @@ export class Client {
     };
 
     this.socket.send(JSON.stringify(msg));
+  }
+  answer(answer) {
+    console.log("answer", JSON.stringify(answer));
+    this.socket.send(
+      JSON.stringify({ method: "answer", params: { desc: answer } })
+    );
   }
 }

@@ -48,4 +48,7 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-replace github.com/pion/ion-sfu => github.com/GRVYDEV/ion-sfu v0.0.0-20230415205953-0cd50878dd18
+// ion hax
+replace github.com/pion/ion-sfu => github.com/GRVYDEV/ion-sfu v0.0.0-20230418020340-dbea2d314f93
+
+// replace github.com/pion/ion-sfu => /Users/garrettgraves/dev/ion-sfu

@@ -30,13 +30,23 @@ function handleJoin() {
 function handleOffer(offer) {}
 
 async function init() {
-  const stream = await getMedia();
-  console.log(stream.getTracks());
-  const videoEl = document.getElementById("local");
-  videoEl.srcObject = stream;
-  videoEl.muted = true;
+  const queryString = window.location.search;
+  const params = new URLSearchParams(queryString);
+  const room = params.get("room") || "foo";
+  const noSub = params.get("noSub") || false;
+  const noPub = params.get("noPub") || false;
+  const tester = params.get("tester") || false;
+  console.log(noPub);
+  let stream;
+  if (!noPub) {
+    stream = await getMedia();
+    console.log(stream.getTracks());
+    const videoEl = document.getElementById("local");
+    videoEl.srcObject = stream;
+    videoEl.muted = true;
+  }
 
-  const client = new Client(stream);
+  const client = new Client(stream, noPub, noSub, room, tester);
 
   await client.join();
 }
