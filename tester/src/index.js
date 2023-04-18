@@ -1,13 +1,11 @@
 const puppeteer = require("puppeteer");
 const express = require("express");
 
-const app = express();
+// const app = express();
 
-app.use(express.static("web"));
+// app.use(express.static("web"));
 
-app.listen(8080, () => {});
-
-console.log("yo");
+// app.listen(8080, () => {});
 
 (async () => {
   let roomName = process.env.ROOM || "test";

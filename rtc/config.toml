@@ -42,8 +42,8 @@ enabletemporallayer = false
 # Format: [min, max]   and max - min >= 100
 portrange = [5000, 5200]
 # if sfu behind nat, set iceserver
-# [[webrtc.iceserver]]
-# urls = ["stun:stun.stunprotocol.org:3478"]
+[[webrtc.iceserver]]
+urls = ["stun:stun.l.google.com:19302"]
 # [[webrtc.iceserver]]
 # urls = ["turn:turn.awsome.org:3478"]
 # username = "awsome"
