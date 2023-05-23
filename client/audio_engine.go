@@ -2,15 +2,17 @@ package main
 
 import (
 	"log"
+	"math"
 	"os"
+	"sync"
 
 	"github.com/pion/rtp"
 	"gopkg.in/hraban/opus.v2"
 )
 
 const (
-	sampleRate  = 48000
-	channels    = 2
+	sampleRate  = 16000 // 16000 sample rate since this what whisper.cpp wants
+	channels    = 1     // decode into 1 channel since that is what whisper.cpp wants
 	frameSizeMs = 20
 )
 
@@ -26,9 +28,11 @@ type AudioEngine struct {
 
 	dec *opus.Decoder
 	// slice to hold raw pcm data during decoding
-	pcm []int16
+	pcm []float32
 	// slice to hold binary encoded pcm data
 	buf []byte
+
+	we WhisperEngine
 }
 
 func NewAudioEngine() (*AudioEngine, error) {
@@ -40,7 +44,7 @@ func NewAudioEngine() (*AudioEngine, error) {
 	return &AudioEngine{
 		rtpIn:  make(chan *rtp.Packet),
 		rtpOut: make(chan *rtp.Packet),
-		pcm:    make([]int16, frameSize),
+		pcm:    make([]float32, frameSize),
 		buf:    make([]byte, frameSize*2),
 		dec:    dec,
 	}, nil
@@ -87,7 +91,8 @@ func (a *AudioEngine) decode() {
 }
 
 func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
-	if n, err := a.dec.Decode(pkt.Payload, a.pcm); err != nil {
+	// we decode to float32 here since that is what whisper.cpp takes
+	if n, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm); err != nil {
 		log.Printf("error decoding fb packet %+v", err)
 		return 0, err
 	} else {
@@ -96,13 +101,15 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 	}
 }
 
-func convertToBytes(in []int16, out []byte) int {
+func convertToBytes(in []float32, out []byte) int {
 	currIndex := 0
-	for _, i := range in {
-		out[currIndex] = byte(i & 0b11111111)
+	for i := range in {
+		res := int16(math.Floor(float64(in[i] * 32767)))
+
+		out[currIndex] = byte(res & 0b11111111)
 		currIndex++
 
-		out[currIndex] = (byte(i >> 8))
+		out[currIndex] = (byte(res >> 8))
 		currIndex++
 	}
 	return currIndex
