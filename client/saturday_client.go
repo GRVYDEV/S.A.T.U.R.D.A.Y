@@ -22,7 +22,10 @@ type SaturdayConfig struct {
 }
 
 func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
-	ae := NewAudioEngine()
+	ae, err := NewAudioEngine()
+	if err != nil {
+		log.Fatalf("failed to create audio engine %+v", err)
+	}
 	ws := NewSocketConnection(config.Url)
 	pc := NewPeerConn(func(candidate *webrtc.ICECandidate) {
 		// TODO make this support both sub and pub
