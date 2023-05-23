@@ -59,9 +59,9 @@ export class Client {
 
   async socketConnect() {
     return new Promise((resolve) => {
-      let url = "ws://localhost:8080/ws";
+      let url = "ws://localhost:8088/ws";
       if (this.useDockerWs) {
-        url = "ws://host.docker.internal:8080/ws";
+        url = "ws://host.docker.internal:8088/ws";
       }
       this.socket = new WebSocket(url);
 

@@ -73,7 +73,7 @@ func main() {
 	}))
 
 	// Start the server and listen on port 8080.
-	port := 8080
+	port := 8088
 	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil)
 	if err != nil {
 		fmt.Println(err)
