@@ -4,7 +4,9 @@ go 1.20
 
 require (
 	github.com/gorilla/websocket v1.5.0
+	github.com/pion/rtp v1.7.7
 	github.com/pion/webrtc/v3 v3.1.25
+	gopkg.in/hraban/opus.v2 v2.0.0-20220302220929-eeacdbcb92d0
 )
 
 require (
@@ -15,10 +17,8 @@ require (
 	github.com/pion/interceptor v0.1.10 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.5 // indirect
-	github.com/pion/opus v0.0.0-20230518193850-25d4c9ab42c4 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.9 // indirect
-	github.com/pion/rtp v1.7.7 // indirect
 	github.com/pion/sctp v1.8.2 // indirect
 	github.com/pion/sdp/v3 v3.0.4 // indirect
 	github.com/pion/srtp/v2 v2.0.5 // indirect
