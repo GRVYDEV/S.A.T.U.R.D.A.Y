@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/pion/opus"
 	"github.com/pion/rtp"
+	nopus "gopkg.in/hraban/opus.v2"
 )
 
 // AudioEngine is used to convert RTP Opus packets to raw PCM audio to be sent to Whisper
@@ -39,14 +39,24 @@ func (a *AudioEngine) Start() {
 
 // decode reads over the in channel in a loop, decodes the RTP packets to raw PCM and sends the data on another channel
 func (a *AudioEngine) decode() {
-	f, err := os.Create("audio.pcm")
+	_, err := os.Create("audio.pcm")
 	if err != nil {
 		log.Printf("err creating file %+v", err)
 		return
 	}
 
-	out := make([]byte, 1920)
-	decoder := opus.NewDecoder()
+	channels := 2
+	frameSizeMs := 20
+	sampleRate := 48000 // negotiated in SDP?
+
+	frameSize := channels * frameSizeMs * sampleRate / 1000
+	out := make([]int16, frameSize)
+	//	decoder := opus.NewDecoder()
+
+	dec, err := nopus.NewDecoder(sampleRate, channels)
+	if err != nil {
+		log.Fatalf("error creating opus decoder %+v", err)
+	}
 
 	for {
 		pkt, ok := <-a.rtpIn
@@ -55,12 +65,14 @@ func (a *AudioEngine) decode() {
 			return
 		}
 		log.Printf("got pkt of size %d", len(pkt.Payload))
-		if _, _, err := decoder.Decode(pkt.Payload, out); err != nil {
+		if n, err := dec.Decode(pkt.Payload, out); err != nil {
 			log.Fatalf("error decoding opus packet %+v", err)
+		} else {
+			log.Printf("decoded %d samples", n)
 		}
 
-		if _, err = f.Write(out); err != nil {
-			log.Fatalf("error writing to file %+v", err)
-		}
+		// if _, err = f.Write(out); err != nil {
+		// 	log.Fatalf("error writing to file %+v", err)
+		// }
 	}
 }
