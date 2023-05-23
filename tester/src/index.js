@@ -30,6 +30,7 @@ const express = require("express");
       "--disable-dev-shm-usage",
       "--use-fake-ui-for-media-stream",
       "--use-fake-device-for-media-stream",
+      "--use-file-for-fake-audio-capture=audio.wav",
       "--autoplay-policy=no-user-gesture-required",
       "--unsafely-treat-insecure-origin-as-secure=http:docker.internal:8080",
     ],
