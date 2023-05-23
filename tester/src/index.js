@@ -37,7 +37,7 @@ const express = require("express");
   });
 
   for (var i = 0; i < tabCount; i++) {
-    const url = `http://localhost:8080?room=${roomName}&noSub=true`;
+    const url = `http://localhost:8088?room=${roomName}&noSub=true`;
     const page = await browser.newPage();
     page
       .on("console", (message) =>
