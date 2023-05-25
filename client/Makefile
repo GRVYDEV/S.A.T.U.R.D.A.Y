@@ -1,24 +1,27 @@
 WHISPER_DIR := $(abspath ../whisper.cpp)
 MODELS_DIR := models
-INCLUDE_PATH := $(abspath ./lib)
-LIBRARY_PATH := $(abspath ./lib)
-HAS_WHISPER := "$(shell find $(WHISPER_DIR) -maxdepth 0 -empty)"
-HAS_WHISPER := "foo"
-HAS_MODEL := "foo"
-
-
-
-test: pre-reqs
+# TODO make this configurable
+MODEL_NAME := base.en
+MODEL_FILE_NAME := ggml-$(MODEL_NAME).bin
+INCLUDE_PATH := $(WHISPER_DIR)
+LIBRARY_PATH := $(WHISPER_DIR)
 
 pre-reqs:
-ifneq ($(HAS_WHISPER), "")
+ifeq ($(wildcard $(WHISPER_DIR)/*),)
 	@echo "fetching whisper repo"
-	#@${MAKE} -C ../ fetch-whisper
+	@${MAKE} -C ../ fetch-whisper
 endif
 
-ifneq ($(HAS_MODEL), "")
+ifeq ($(wildcard $(WHISPER_DIR)/libwhisper.a),)
+	@echo "building whisper lib"
+	@${MAKE} -C ../ build-whisper-lib
+endif
+
+ifeq ($(wildcard $(MODELS_DIR)/$(MODEL_FILE_NAME)),)
 	@echo "fetching model"
+	@${MAKE} -C ../whisper.cpp base.en
+	@cp $(WHISPER_DIR)/models/ggml-$(MODEL_NAME).bin $(MODELS_DIR)
 endif
 
-run:
+run: pre-reqs
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go run .
