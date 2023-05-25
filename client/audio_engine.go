@@ -4,15 +4,14 @@ import (
 	"log"
 	"math"
 	"os"
-	"sync"
 
 	"github.com/pion/rtp"
 	"gopkg.in/hraban/opus.v2"
 )
 
 const (
-	sampleRate  = 16000 // 16000 sample rate since this what whisper.cpp wants
-	channels    = 1     // decode into 1 channel since that is what whisper.cpp wants
+	sampleRate  = whisperSampleRate // found in whisper_engine.go (16000)
+	channels    = 1                 // decode into 1 channel since that is what whisper.cpp wants
 	frameSizeMs = 20
 )
 
@@ -32,11 +31,16 @@ type AudioEngine struct {
 	// slice to hold binary encoded pcm data
 	buf []byte
 
-	we WhisperEngine
+	we *WhisperEngine
 }
 
 func NewAudioEngine() (*AudioEngine, error) {
 	dec, err := opus.NewDecoder(sampleRate, channels)
+	if err != nil {
+		return nil, err
+	}
+
+	we, err := NewWhisperEngine()
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +51,7 @@ func NewAudioEngine() (*AudioEngine, error) {
 		pcm:    make([]float32, frameSize),
 		buf:    make([]byte, frameSize*2),
 		dec:    dec,
+		we:     we,
 	}, nil
 }
 
@@ -65,7 +70,7 @@ func (a *AudioEngine) Start() {
 
 // decode reads over the in channel in a loop, decodes the RTP packets to raw PCM and sends the data on another channel
 func (a *AudioEngine) decode() {
-	f, err := os.Create("audio.pcm")
+	_, err := os.Create("audio.pcm")
 	if err != nil {
 		log.Printf("err creating file %+v", err)
 		return
@@ -77,14 +82,14 @@ func (a *AudioEngine) decode() {
 			log.Print("rtpIn channel closed...")
 			return
 		}
-		log.Printf("got pkt of size %d", len(pkt.Payload))
-		if n, err := a.decodePacket(pkt); err != nil {
+		// log.Printf("got pkt of size %d", len(pkt.Payload))
+		if _, err := a.decodePacket(pkt); err != nil {
 			log.Fatalf("error decoding opus packet %+v", err)
 		} else {
-			log.Printf("decoded %d bytes", n)
-			if _, err = f.Write(a.buf[:n]); err != nil {
-				log.Fatalf("error writing to file %+v", err)
-			}
+			// log.Printf("decoded %d bytes", n)
+			// if _, err = f.Write(a.buf[:n]); err != nil {
+			// 	log.Fatalf("error writing to file %+v", err)
+			// }
 		}
 
 	}
@@ -92,11 +97,12 @@ func (a *AudioEngine) decode() {
 
 func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 	// we decode to float32 here since that is what whisper.cpp takes
-	if n, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm); err != nil {
+	if _, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm); err != nil {
 		log.Printf("error decoding fb packet %+v", err)
 		return 0, err
 	} else {
-		log.Printf("decoded %d FB samples", n)
+		// log.Printf("decoded %d FB samples", n)
+		a.we.Write(a.pcm)
 		return convertToBytes(a.pcm, a.buf), nil
 	}
 }
