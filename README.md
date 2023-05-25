@@ -7,7 +7,7 @@
   <br>
 </h1>
 
-<h4 align="center">A voice based interface to modern LLM's powered by <a href="https://github.com/pion">Pion</a> and <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>. Inspired by Jarvis and F.R.I.D.A.Y from Iron Man</h4>
+<h4 align="center">A voice based interface to modern LLM's powered by <a href="https://github.com/pion">Pion</a> and <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>. Inspired by J.A.R.V.I.S and F.R.I.D.A.Y from Iron Man</h4>
 
 <p align="center">
     <a href="https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stargazers"><img src="https://img.shields.io/github/stars/GRVYDEV/S.A.T.U.R.D.A.Y" alt="Stars Badge"/></a>
