@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"sync"
-
-	"github.com/ggerganov/whisper.cpp/bindings/go/pkg/whisper"
 )
 
 const (
@@ -32,11 +30,11 @@ type WhisperEngine struct {
 	// Buffer to store old and new audio to run inference on.
 	// By inferring on old and new audio we can help smooth out cross word boundaries
 	whisperWindow []float32
-	model         whisper.Model
+	model         *WhisperModel
 }
 
 func NewWhisperEngine() (*WhisperEngine, error) {
-	model, err := whisper.New("./models/ggml-base.en.bin")
+	model, err := NewWhisperModel()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +67,7 @@ func (we *WhisperEngine) runInference() {
 		pcmWinLen     = len(we.pcmWindow)
 	)
 
-	log.Printf("attempting to run inference:\n WHISPER WINDOW: %d\n PCM WINDOWN: %d", whisperWinLen, pcmWinLen)
+	// log.Printf("attempting to run inference:\n WHISPER WINDOW: %d\n PCM WINDOWN: %d", whisperWinLen, pcmWinLen)
 
 	if whisperWinLen == whisperWindowSize {
 		// we have a full window so we need to drop the oldest samples and append the newest ones
@@ -93,4 +91,7 @@ func (we *WhisperEngine) runInference() {
 	}
 
 	log.Printf("running whisper inference with %d window length", len(we.whisperWindow))
+	if err := we.model.Process(we.whisperWindow); err != nil {
+		log.Printf("err running inference %+v", err)
+	}
 }
