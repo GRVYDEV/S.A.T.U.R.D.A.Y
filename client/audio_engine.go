@@ -70,11 +70,11 @@ func (a *AudioEngine) Start() {
 
 // decode reads over the in channel in a loop, decodes the RTP packets to raw PCM and sends the data on another channel
 func (a *AudioEngine) decode() {
-	_, err := os.Create("audio.pcm")
-	if err != nil {
-		log.Printf("err creating file %+v", err)
-		return
-	}
+	// _, err := os.Create("audio.pcm")
+	// if err != nil {
+	// 	log.Printf("err creating file %+v", err)
+	// 	return
+	// }
 
 	for {
 		pkt, ok := <-a.rtpIn
