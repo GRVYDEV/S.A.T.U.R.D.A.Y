@@ -31,6 +31,8 @@ func NewWhisperModel() (*WhisperModel, error) {
 	params.SetSpeedup(false)
 	params.SetLanguage(ctx.Whisper_lang_id("en"))
 
+	log.Printf("Initialized whisper model with params:\n %s", params.String())
+
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
 
