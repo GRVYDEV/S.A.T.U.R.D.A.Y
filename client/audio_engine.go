@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"math"
-	"os"
 
 	"github.com/pion/rtp"
 	"gopkg.in/hraban/opus.v2"
