@@ -17,13 +17,13 @@ type WhisperModel struct {
 
 type Transcription struct {
 	from           uint32
-	transcriptions []TrasncriptionSegment
+	transcriptions []TranscriptionSegment
 }
 
-type TrasncriptionSegment struct {
-	from uint32
-	to   uint32
-	text string
+type TranscriptionSegment struct {
+	startTimestamp uint32
+	endTimestamp   uint32
+	text           string
 }
 
 func NewWhisperModel() (*WhisperModel, error) {
@@ -56,16 +56,14 @@ func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (er
 		return err, transcription
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
-		log.Printf("Got %d segments start %d", segments, recordingStartTime)
 		for i := 0; i < segments; i++ {
-			trasncriptionSegment := TrasncriptionSegment{}
+			trasncriptionSegment := TranscriptionSegment{}
 
-			trasncriptionSegment.from = uint32(w.ctx.Whisper_full_get_segment_t0(i) * 10)
-			trasncriptionSegment.to = uint32(w.ctx.Whisper_full_get_segment_t1(i) * 10)
+			trasncriptionSegment.startTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i) * 10)
+			trasncriptionSegment.endTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i) * 10)
 
 			trasncriptionSegment.text = w.ctx.Whisper_full_get_segment_text(i)
 
-			log.Printf("Segment %d %d- %d: %s", i, recordingStartTime+trasncriptionSegment.from, recordingStartTime+trasncriptionSegment.to, trasncriptionSegment.text)
 			transcription.transcriptions = append(transcription.transcriptions, trasncriptionSegment)
 		}
 	}

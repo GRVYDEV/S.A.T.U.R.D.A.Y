@@ -31,20 +31,24 @@ type WhisperEngine struct {
 	pcmWindow []float32
 	// Buffer to store old and new audio to run inference on.
 	// By inferring on old and new audio we can help smooth out cross word boundaries
-	whisperWindow []float32
-	model         *WhisperModel
+	whisperWindow        []float32
+	model                *WhisperModel
+	lastHandledTimestamp uint32
+	transcriptionStream  chan TranscriptionSegment
 }
 
-func NewWhisperEngine() (*WhisperEngine, error) {
+func NewWhisperEngine(transcriptionStream chan TranscriptionSegment) (*WhisperEngine, error) {
 	model, err := NewWhisperModel()
 	if err != nil {
 		return nil, err
 	}
 
 	return &WhisperEngine{
-		whisperWindow: make([]float32, 0, whisperWindowSize),
-		pcmWindow:     make([]float32, 0, pcmWindowSize),
-		model:         model,
+		whisperWindow:        make([]float32, 0, whisperWindowSize),
+		pcmWindow:            make([]float32, 0, pcmWindowSize),
+		model:                model,
+		lastHandledTimestamp: 0,
+		transcriptionStream:  transcriptionStream,
 	}, nil
 }
 
@@ -60,11 +64,30 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	if len(we.pcmWindow) == pcmWindowSize {
 		// TODO make this run in a go routine
 
-		we.runInference(Timestamp - pcmSampleRateMs)
+		err, transcription := we.runInference(Timestamp + whisperSampleWindowMs)
+
+		if err == nil {
+			var buffer []TranscriptionSegment
+			log.Printf("Got %d segments start %d", len(transcription.transcriptions), transcription.from)
+			//foreach of these transcription.transcriptions if there is a segment that is not the last add it to a buffer
+			for i, segment := range transcription.transcriptions {
+				log.Printf("Segment %d %d- %d: %s", i, transcription.from+segment.startTimestamp, transcription.from+segment.endTimestamp, segment.text)
+				// If the segment is not the last one, add it to the buffer
+				if i != len(transcription.transcriptions)-1 {
+					buffer = append(buffer, segment)
+					we.transcriptionStream <- segment
+					we.lastHandledTimestamp = transcription.from + segment.endTimestamp
+				}
+			}
+			log.Print("new endTimestamp: ", we.lastHandledTimestamp)
+
+		} else {
+			log.Printf("error running inference: ", err.Error())
+		}
 	}
 }
 
-func (we *WhisperEngine) runInference(recordingStartTime uint32) (error, Transcription) {
+func (we *WhisperEngine) runInference(addedRecordingStartTime uint32) (error, Transcription) {
 	var (
 		whisperWinLen = len(we.whisperWindow)
 		pcmWinLen     = len(we.pcmWindow)
@@ -93,7 +116,16 @@ func (we *WhisperEngine) runInference(recordingStartTime uint32) (error, Transcr
 		we.pcmWindow = we.pcmWindow[:0]
 	}
 
+	whisperWindowStartTimestamp := addedRecordingStartTime - uint32(len(we.whisperWindow)/whisperSampleRateMs)
+	timestampTranscriptionStartsFrom := whisperWindowStartTimestamp
+
+	if we.lastHandledTimestamp > 0 && we.lastHandledTimestamp > whisperWindowStartTimestamp {
+		delteToCutFromTheStart := (we.lastHandledTimestamp - whisperWindowStartTimestamp) * whisperSampleRateMs
+		we.whisperWindow = we.whisperWindow[delteToCutFromTheStart:]
+		timestampTranscriptionStartsFrom = we.lastHandledTimestamp
+	}
+
 	log.Printf("running whisper inference with %d window length", len(we.whisperWindow))
-	return we.model.Process(we.whisperWindow, recordingStartTime)
+	return we.model.Process(we.whisperWindow, timestampTranscriptionStartsFrom)
 
 }

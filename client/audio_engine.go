@@ -31,17 +31,15 @@ type AudioEngine struct {
 	buf []byte
 
 	firstTimeStamp *uint32
-
-	we *WhisperEngine
+	we             *WhisperEngine
 }
 
-func NewAudioEngine() (*AudioEngine, error) {
+func NewAudioEngine(transcriptionStream chan TranscriptionSegment) (*AudioEngine, error) {
 	dec, err := opus.NewDecoder(sampleRate, channels)
 	if err != nil {
 		return nil, err
 	}
-
-	we, err := NewWhisperEngine()
+	we, err := NewWhisperEngine(transcriptionStream)
 	if err != nil {
 		return nil, err
 	}
