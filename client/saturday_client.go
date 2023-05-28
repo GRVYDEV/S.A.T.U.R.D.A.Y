@@ -22,7 +22,8 @@ type SaturdayConfig struct {
 }
 
 func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
-	ae, err := NewAudioEngine()
+	transcriptionStream := make(chan TranscriptionSegment, 100)
+	ae, err := NewAudioEngine(transcriptionStream)
 	if err != nil {
 		log.Fatalf("failed to create audio engine %+v", err)
 	}
