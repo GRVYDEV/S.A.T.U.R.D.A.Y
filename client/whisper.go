@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"time"
 
 	whisper "github.com/ggerganov/whisper.cpp/bindings/go"
 )
@@ -12,6 +13,17 @@ import (
 type WhisperModel struct {
 	ctx    *whisper.Context
 	params whisper.Params
+}
+
+type Transcription struct {
+	from           uint32
+	transcriptions []TrasncriptionSegment
+}
+
+type TrasncriptionSegment struct {
+	from uint32
+	to   uint32
+	text string
 }
 
 func NewWhisperModel() (*WhisperModel, error) {
@@ -36,15 +48,28 @@ func NewWhisperModel() (*WhisperModel, error) {
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
 
-func (w *WhisperModel) Process(samples []float32) error {
+func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (error, Transcription) {
+	start := time.Now()
+	transcription := Transcription{}
+	transcription.from = recordingStartTime
 	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
-		return err
+		return err, transcription
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
+		log.Printf("Got %d segments start %d", segments, recordingStartTime)
 		for i := 0; i < segments; i++ {
-			text := w.ctx.Whisper_full_get_segment_text(i)
-			log.Printf("Segment %d: %s", i, text)
+			trasncriptionSegment := TrasncriptionSegment{}
+
+			trasncriptionSegment.from = uint32(w.ctx.Whisper_full_get_segment_t0(i) * 10)
+			trasncriptionSegment.to = uint32(w.ctx.Whisper_full_get_segment_t1(i) * 10)
+
+			trasncriptionSegment.text = w.ctx.Whisper_full_get_segment_text(i)
+
+			log.Printf("Segment %d %d- %d: %s", i, recordingStartTime+trasncriptionSegment.from, recordingStartTime+trasncriptionSegment.to, trasncriptionSegment.text)
+			transcription.transcriptions = append(transcription.transcriptions, trasncriptionSegment)
 		}
 	}
-	return nil
+	elapsed := time.Since(start)
+	log.Printf("Process took %s", elapsed)
+	return nil, transcription
 }

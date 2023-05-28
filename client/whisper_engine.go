@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -13,13 +15,13 @@ const (
 	// This determines how much audio we will be passing to whisper inference.
 	// We will buffer up to (whisperSampleWindowMs - pcmSampleRateMs) of old audio and then add
 	// audioSampleRateMs of new audio onto the end of the buffer for inference
-	whisperSampleWindowMs = 5000 // 5 second sample window
+	whisperSampleWindowMs = 24000 // 5 second sample window
 	whisperWindowSize     = whisperSampleWindowMs * whisperSampleRateMs
 	// This is the minimum ammount of audio we want to buffer before running inference
 	whisperWindowMinSize = whisperWindowSize / 2
 	// This determines how often we will try to run inference.
 	// We will buffer (pcmSampleRateMs * whisperSampleRate / 1000) samples and then run inference
-	pcmSampleRateMs = 500
+	pcmSampleRateMs = 6000
 	pcmWindowSize   = pcmSampleRateMs * whisperSampleRateMs
 )
 
@@ -46,7 +48,7 @@ func NewWhisperEngine() (*WhisperEngine, error) {
 	}, nil
 }
 
-func (we *WhisperEngine) Write(pcm []float32) {
+func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	we.Lock()
 	defer we.Unlock()
 	if len(we.pcmWindow)+len(pcm) > pcmWindowSize {
@@ -57,11 +59,12 @@ func (we *WhisperEngine) Write(pcm []float32) {
 	// We have filled up our window so lets run inference
 	if len(we.pcmWindow) == pcmWindowSize {
 		// TODO make this run in a go routine
-		we.runInference()
+
+		we.runInference(Timestamp - pcmSampleRateMs)
 	}
 }
 
-func (we *WhisperEngine) runInference() {
+func (we *WhisperEngine) runInference(recordingStartTime uint32) (error, Transcription) {
 	var (
 		whisperWinLen = len(we.whisperWindow)
 		pcmWinLen     = len(we.pcmWindow)
@@ -76,14 +79,14 @@ func (we *WhisperEngine) runInference() {
 		we.pcmWindow = we.pcmWindow[:0]
 	} else if whisperWinLen+pcmWinLen > whisperWindowSize {
 		// this shouldn't happen hopefully...
-		log.Printf("GOING TO OVERFLOW WIN BUF BY %d", whisperWinLen+pcmWinLen-whisperWindowSize)
-		return
+		message := fmt.Sprintf("GOING TO OVERFLOW WIN BUF BY %d", whisperWinLen+pcmWinLen-whisperWindowSize)
+		return errors.New(message), Transcription{}
 	} else if whisperWinLen+pcmWinLen < whisperWindowMinSize {
 		// we dont have enough audio to run inference so add the pcmWindow and return
-		log.Printf("not enough audio we only have %d samples continuing...", whisperWinLen)
+		message := fmt.Sprintf("not enough audio we only have %d samples continuing...", whisperWinLen)
 		we.whisperWindow = append(we.whisperWindow, we.pcmWindow...)
 		we.pcmWindow = we.pcmWindow[:0]
-		return
+		return errors.New(message), Transcription{}
 	} else {
 		// we have enough audio to run inference
 		we.whisperWindow = append(we.whisperWindow, we.pcmWindow...)
@@ -91,7 +94,6 @@ func (we *WhisperEngine) runInference() {
 	}
 
 	log.Printf("running whisper inference with %d window length", len(we.whisperWindow))
-	if err := we.model.Process(we.whisperWindow); err != nil {
-		log.Printf("err running inference %+v", err)
-	}
+	return we.model.Process(we.whisperWindow, recordingStartTime)
+
 }
