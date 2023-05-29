@@ -30,16 +30,16 @@ type AudioEngine struct {
 	// slice to hold binary encoded pcm data
 	buf []byte
 
-	we *WhisperEngine
+	firstTimeStamp *uint32
+	we             *WhisperEngine
 }
 
-func NewAudioEngine() (*AudioEngine, error) {
+func NewAudioEngine(transcriptionStream chan TranscriptionSegment) (*AudioEngine, error) {
 	dec, err := opus.NewDecoder(sampleRate, channels)
 	if err != nil {
 		return nil, err
 	}
-
-	we, err := NewWhisperEngine()
+	we, err := NewWhisperEngine(transcriptionStream)
 	if err != nil {
 		return nil, err
 	}
@@ -82,26 +82,42 @@ func (a *AudioEngine) decode() {
 			return
 		}
 		// log.Printf("got pkt of size %d", len(pkt.Payload))
+		if pkt.SequenceNumber == 0 {
+			log.Print("Resetting timestamp bc sequencenumber 0...")
+			a.firstTimeStamp = &pkt.Timestamp
+		}
+		if a.firstTimeStamp == nil {
+			log.Print("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
+			a.firstTimeStamp = &pkt.Timestamp
+		}
+
 		if _, err := a.decodePacket(pkt); err != nil {
 			log.Fatalf("error decoding opus packet %+v", err)
 		} else {
+
 			// log.Printf("decoded %d bytes", n)
 			// if _, err = f.Write(a.buf[:n]); err != nil {
 			// 	log.Fatalf("error writing to file %+v", err)
 			// }
 		}
-
 	}
 }
 
 func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
+	_, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm)
 	// we decode to float32 here since that is what whisper.cpp takes
-	if _, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm); err != nil {
+	if err != nil {
 		log.Printf("error decoding fb packet %+v", err)
 		return 0, err
 	} else {
 		// log.Printf("decoded %d FB samples", n)
-		a.we.Write(a.pcm)
+		// log.Printf("decoded %d samples", len(a.pcm))
+		// log.Printf("timestamps %d %d", pkt.Timestamp, *a.firstTimeStamp)
+		// log.Printf("Calc %d", (pkt.Timestamp-(*a.firstTimeStamp))/(sampleRate*3))
+		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
+		lengthOfRecording := uint32(len(a.pcm)) * 3
+		timestampRecordingEnds := timestampMS + lengthOfRecording
+		a.we.Write(a.pcm, timestampRecordingEnds)
 		return convertToBytes(a.pcm, a.buf), nil
 	}
 }
