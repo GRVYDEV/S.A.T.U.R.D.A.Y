@@ -4,7 +4,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
 )
 
@@ -12,10 +11,9 @@ type PeerConn struct {
 	conn              *webrtc.PeerConnection
 	pendingCandidates []webrtc.ICECandidateInit
 	mu                sync.Mutex
-	rtpIn             chan<- *rtp.Packet
 }
 
-func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan<- *rtp.Packet) *PeerConn {
+func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate)) PeerConn {
 	// Prepare the configuration
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
@@ -30,10 +28,9 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 		logger.Fatal(err, "pc err")
 	}
 
-	pc := &PeerConn{
+	pc := PeerConn{
 		conn:              peerConnection,
 		pendingCandidates: make([]webrtc.ICECandidateInit, 0),
-		rtpIn:             rtpIn,
 	}
 
 	// When an ICE candidate is available send to the other Pion instance
@@ -52,26 +49,6 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 		}
 	})
 
-	peerConnection.OnTrack(func(t *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
-		kind := "unknown kind"
-		if t.Kind() == webrtc.RTPCodecTypeVideo {
-			kind = "video"
-		} else if t.Kind() == webrtc.RTPCodecTypeAudio {
-			kind = "audio"
-			go func() {
-				for {
-					pkt, _, err := t.ReadRTP()
-					if err != nil {
-						logger.Error(err, "err reading rtp")
-						return
-					}
-					pc.rtpIn <- pkt
-				}
-			}()
-		}
-		logger.Debugf("got track %s", kind)
-	})
-
 	return pc
 	// defer func() {
 	// 	if err := peerConnection.Close(); err != nil {
@@ -80,20 +57,21 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 	// }()
 }
 
-func (c *PeerConn) Offer(offer webrtc.SessionDescription) error {
+func (c PeerConn) Offer(offer webrtc.SessionDescription) error {
 	return c.conn.SetRemoteDescription(offer)
 }
 
-func (c *PeerConn) Answer() (*webrtc.SessionDescription, error) {
+func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
+	var answer = webrtc.SessionDescription{}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	answer, err := c.conn.CreateAnswer(nil)
 	if err != nil {
-		return nil, err
+		return answer, err
 	}
 	if err = c.conn.SetLocalDescription(answer); err != nil {
-		return nil, err
+		return answer, err
 	}
 
 	for _, candidate := range c.pendingCandidates {
@@ -104,10 +82,10 @@ func (c *PeerConn) Answer() (*webrtc.SessionDescription, error) {
 
 	c.pendingCandidates = make([]webrtc.ICECandidateInit, 0)
 
-	return &answer, nil
+	return answer, nil
 }
 
-func (c *PeerConn) AddIceCandidate(candidate webrtc.ICECandidateInit) error {
+func (c PeerConn) AddIceCandidate(candidate webrtc.ICECandidateInit) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

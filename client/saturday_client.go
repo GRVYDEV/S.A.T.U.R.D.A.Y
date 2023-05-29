@@ -8,7 +8,7 @@ import (
 
 type SaturdayClient struct {
 	ws     *SocketConnection
-	pc     *PeerConn
+	rtc    *RTCConnection
 	config SaturdayConfig
 	ae     *AudioEngine
 }
@@ -27,22 +27,18 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 		logger.Fatalf(err, "failed to create audio engine")
 	}
 	ws := NewSocketConnection(config.Url)
-	pc := NewPeerConn(func(candidate *webrtc.ICECandidate) {
-		// TODO make this support both sub and pub
-		ws.SendTrickle(candidate, 1)
-	}, ae.In())
+
+	rtc := NewRTCConnection(ws.SendTrickle, ae.In())
 
 	s := &SaturdayClient{
 		ws:     ws,
-		pc:     pc,
+		rtc:    rtc,
 		config: config,
 		ae:     ae,
 	}
 
 	s.ws.SetOnOffer(s.OnOffer)
-	s.ws.SetOnTrickle(func(candidate webrtc.ICECandidateInit, target int) error {
-		return s.pc.AddIceCandidate(candidate)
-	})
+	s.ws.SetOnTrickle(s.rtc.OnTrickle)
 
 	// Starting a new goroutine to read from the channel
 	go func() {
@@ -56,18 +52,13 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 }
 
 func (s *SaturdayClient) OnOffer(offer webrtc.SessionDescription) error {
-	if err := s.pc.Offer(offer); err != nil {
-		logger.Error(err, "error setting offer")
-		return err
-	}
-
-	ans, err := s.pc.Answer()
+	ans, err := s.rtc.OnOffer(offer)
 	if err != nil {
 		logger.Error(err, "error getting answer")
 		return err
 	}
 
-	return s.ws.SendAnswer(*ans)
+	return s.ws.SendAnswer(ans)
 }
 
 func (s *SaturdayClient) Start() error {
