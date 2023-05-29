@@ -67,6 +67,6 @@ func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (er
 		}
 	}
 	elapsed := time.Since(start)
-	logger.Infof("Process took %s", elapsed)
+	logger.Debugf("Process took %s", elapsed)
 	return nil, transcription
 }

@@ -125,7 +125,7 @@ func (we *WhisperEngine) runInference(addedRecordingStartTime uint32) (error, Tr
 		timestampTranscriptionStartsFrom = we.lastHandledTimestamp
 	}
 
-	logger.Infof("running whisper inference with %d window length", len(we.whisperWindow))
+	logger.Debugf("running whisper inference with %d window length", len(we.whisperWindow))
 	return we.model.Process(we.whisperWindow, timestampTranscriptionStartsFrom)
 
 }
