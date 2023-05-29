@@ -45,6 +45,14 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 		return s.pc.AddIceCandidate(candidate)
 	})
 
+	// Starting a new goroutine to read from the channel
+	go func() {
+		for transcription := range transcriptionStream {
+			// Process the received transcription here
+			// For now, we will just log it
+			log.Printf("Received transcription: %s", transcription.text)
+		}
+	}()
 	return s
 }
 
