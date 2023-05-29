@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -15,13 +14,14 @@ const (
 	// This determines how much audio we will be passing to whisper inference.
 	// We will buffer up to (whisperSampleWindowMs - pcmSampleRateMs) of old audio and then add
 	// audioSampleRateMs of new audio onto the end of the buffer for inference
-	whisperSampleWindowMs = 24000 // 5 second sample window
+	whisperSampleWindowMs = 24000 // 24 second sample window
 	whisperWindowSize     = whisperSampleWindowMs * whisperSampleRateMs
 	// This is the minimum ammount of audio we want to buffer before running inference
-	whisperWindowMinSize = whisperWindowSize / 2
+	// 2 seconds of audio samples
+	whisperWindowMinSize = 2000 * whisperSampleRateMs
 	// This determines how often we will try to run inference.
 	// We will buffer (pcmSampleRateMs * whisperSampleRate / 1000) samples and then run inference
-	pcmSampleRateMs = 6000
+	pcmSampleRateMs = 500
 	pcmWindowSize   = pcmSampleRateMs * whisperSampleRateMs
 )
 
@@ -57,7 +57,7 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	defer we.Unlock()
 	if len(we.pcmWindow)+len(pcm) > pcmWindowSize {
 		// This shouldn't happen hopefully...
-		log.Printf("GOING TO OVERFLOW PCM WINDOW BY %d", len(we.pcmWindow)+len(pcm)-pcmWindowSize)
+		logger.Infof("GOING TO OVERFLOW PCM WINDOW BY %d", len(we.pcmWindow)+len(pcm)-pcmWindowSize)
 	}
 	we.pcmWindow = append(we.pcmWindow, pcm...)
 	// We have filled up our window so lets run inference
@@ -68,10 +68,10 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 
 		if err == nil {
 			var buffer []TranscriptionSegment
-			log.Printf("Got %d segments start %d", len(transcription.transcriptions), transcription.from)
+			logger.Debugf("Got %d segments start %d", len(transcription.transcriptions), transcription.from)
 			//foreach of these transcription.transcriptions if there is a segment that is not the last add it to a buffer
 			for i, segment := range transcription.transcriptions {
-				log.Printf("Segment %d %d- %d: %s", i, transcription.from+segment.startTimestamp, transcription.from+segment.endTimestamp, segment.text)
+				logger.Debugf("Segment %d %d- %d: %s", i, transcription.from+segment.startTimestamp, transcription.from+segment.endTimestamp, segment.text)
 				// If the segment is not the last one, add it to the buffer
 				if i != len(transcription.transcriptions)-1 {
 					buffer = append(buffer, segment)
@@ -79,10 +79,10 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 					we.lastHandledTimestamp = transcription.from + segment.endTimestamp
 				}
 			}
-			log.Print("new endTimestamp: ", we.lastHandledTimestamp)
+			logger.Debugf("new endTimestamp: %d", we.lastHandledTimestamp)
 
 		} else {
-			log.Print("error running inference: ", err.Error())
+			logger.Error(err, "error running inference")
 		}
 	}
 }
@@ -125,7 +125,7 @@ func (we *WhisperEngine) runInference(addedRecordingStartTime uint32) (error, Tr
 		timestampTranscriptionStartsFrom = we.lastHandledTimestamp
 	}
 
-	log.Printf("running whisper inference with %d window length", len(we.whisperWindow))
+	logger.Infof("running whisper inference with %d window length", len(we.whisperWindow))
 	return we.model.Process(we.whisperWindow, timestampTranscriptionStartsFrom)
 
 }

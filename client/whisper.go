@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"math"
 	"runtime"
 	"time"
@@ -43,7 +42,7 @@ func NewWhisperModel() (*WhisperModel, error) {
 	params.SetSpeedup(false)
 	params.SetLanguage(ctx.Whisper_lang_id("en"))
 
-	log.Printf("Initialized whisper model with params:\n %s", params.String())
+	logger.Infof("Initialized whisper model with params:\n %s", params.String())
 
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
@@ -68,6 +67,6 @@ func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (er
 		}
 	}
 	elapsed := time.Since(start)
-	log.Printf("Process took %s", elapsed)
+	logger.Infof("Process took %s", elapsed)
 	return nil, transcription
 }
