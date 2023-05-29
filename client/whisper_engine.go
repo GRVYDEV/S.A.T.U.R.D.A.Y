@@ -61,7 +61,7 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	}
 	we.pcmWindow = append(we.pcmWindow, pcm...)
 	// We have filled up our window so lets run inference
-	if len(we.pcmWindow) == pcmWindowSize {
+	if len(we.pcmWindow) >= pcmWindowSize {
 		// TODO make this run in a go routine
 
 		err, transcription := we.runInference(Timestamp + whisperSampleWindowMs)
@@ -82,7 +82,7 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 			log.Print("new endTimestamp: ", we.lastHandledTimestamp)
 
 		} else {
-			log.Printf("error running inference: ", err.Error())
+			log.Print("error running inference: ", err.Error())
 		}
 	}
 }
