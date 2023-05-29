@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/url"
 
 	"github.com/gorilla/websocket"
@@ -192,7 +191,7 @@ func (s *SocketConnection) SendTrickle(candidate *webrtc.ICECandidate, target in
 		},
 	}
 
-	log.Print("Sending trickle")
+	logger.Debug("Sending trickle")
 
 	return s.sendMessage(msg)
 }
@@ -205,7 +204,7 @@ func (s *SocketConnection) SendAnswer(answer webrtc.SessionDescription) error {
 		},
 	}
 
-	log.Print("Sending answer")
+	logger.Debug("Sending answer")
 
 	return s.sendMessage(msg)
 }
@@ -213,12 +212,12 @@ func (s *SocketConnection) SendAnswer(answer webrtc.SessionDescription) error {
 func (s *SocketConnection) sendMessage(msg any) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling message to json %+v, %+v", msg, err)
+		logger.Errorf(err, "Error marshaling message to json %+v", msg)
 		return err
 	}
-	log.Printf("Sending message %s", payload)
+	logger.Debugf("Sending message %s", payload)
 	if err := s.ws.WriteMessage(websocket.TextMessage, payload); err != nil {
-		log.Printf("Error sending websocket message %+v err %+v", msg, err)
+		logger.Errorf(err, "Error sending websocket message %+v", msg)
 		return err
 	}
 	return nil
