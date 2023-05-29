@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"sync"
 
@@ -28,7 +27,7 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 	// Create a new RTCPeerConnection
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
-		log.Fatal("pc err", err)
+		logger.Fatal(err, "pc err")
 	}
 
 	pc := &PeerConn{
@@ -42,13 +41,13 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 	peerConnection.OnICECandidate(onICECandidate)
 
 	peerConnection.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		log.Printf("Peer Connection State has changed: %s\n", s.String())
+		logger.Infof("Peer Connection State has changed: %s\n", s.String())
 
 		if s == webrtc.PeerConnectionStateFailed {
 			// Wait until PeerConnection has had no network activity for 30 seconds or another failure. It may be reconnected using an ICE Restart.
 			// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
 			// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
-			log.Println("Peer Connection has gone to failed exiting")
+			logger.Info("Peer Connection has gone to failed exiting")
 			os.Exit(0)
 		}
 	})
@@ -63,14 +62,14 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate), rtpIn chan
 				for {
 					pkt, _, err := t.ReadRTP()
 					if err != nil {
-						log.Printf("err reading rtp %+v", err)
+						logger.Error(err, "err reading rtp")
 						return
 					}
 					pc.rtpIn <- pkt
 				}
 			}()
 		}
-		log.Printf("got track %s", kind)
+		logger.Debugf("got track %s", kind)
 	})
 
 	return pc
@@ -99,7 +98,7 @@ func (c *PeerConn) Answer() (*webrtc.SessionDescription, error) {
 
 	for _, candidate := range c.pendingCandidates {
 		if err = c.conn.AddICECandidate(candidate); err != nil {
-			log.Printf("error adding ice candidate %s %+v", candidate, err)
+			logger.Errorf(err, "error adding ice candidate %+v", candidate)
 		}
 	}
 

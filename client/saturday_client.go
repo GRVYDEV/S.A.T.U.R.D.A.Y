@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/url"
 
 	"github.com/pion/webrtc/v3"
@@ -25,7 +24,7 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 	transcriptionStream := make(chan TranscriptionSegment, 100)
 	ae, err := NewAudioEngine(transcriptionStream)
 	if err != nil {
-		log.Fatalf("failed to create audio engine %+v", err)
+		logger.Fatalf(err, "failed to create audio engine")
 	}
 	ws := NewSocketConnection(config.Url)
 	pc := NewPeerConn(func(candidate *webrtc.ICECandidate) {
@@ -50,7 +49,7 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 		for transcription := range transcriptionStream {
 			// Process the received transcription here
 			// For now, we will just log it
-			log.Printf("Received transcription: %s", transcription.text)
+			logger.Infof("Received transcription: %s", transcription.text)
 		}
 	}()
 	return s
@@ -58,13 +57,13 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 
 func (s *SaturdayClient) OnOffer(offer webrtc.SessionDescription) error {
 	if err := s.pc.Offer(offer); err != nil {
-		log.Printf("error setting offer %+v", err)
+		logger.Error(err, "error setting offer")
 		return err
 	}
 
 	ans, err := s.pc.Answer()
 	if err != nil {
-		log.Printf("error getting answer %+v", err)
+		logger.Error(err, "error getting answer")
 		return err
 	}
 
@@ -73,13 +72,13 @@ func (s *SaturdayClient) OnOffer(offer webrtc.SessionDescription) error {
 
 func (s *SaturdayClient) Start() error {
 	if err := s.ws.Connect(s.config.Room); err != nil {
-		log.Printf("error connecting to websocket %+v", err)
+		logger.Error(err, "error connecting to websocket")
 		return err
 	}
 
 	s.ae.Start()
 
 	s.ws.WaitForDone()
-	log.Print("Socket done goodbye")
+	logger.Info("Socket done goodbye")
 	return nil
 }

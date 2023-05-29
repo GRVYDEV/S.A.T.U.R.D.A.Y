@@ -80,7 +80,7 @@ func (s *SocketConnection) SetOnTrickle(onTrickle func(candidate webrtc.ICECandi
 func (s *SocketConnection) Connect(room string) error {
 	c, _, err := websocket.DefaultDialer.Dial(s.url.String(), nil)
 	if err != nil {
-		log.Printf("dial err: %+v", err)
+		logger.Error(err, "dial err")
 		return err
 	}
 
@@ -98,7 +98,7 @@ func (s *SocketConnection) Connect(room string) error {
 	}
 
 	if err = s.sendMessage(msg); err != nil {
-		log.Printf("Error sending join message %+v", err)
+		logger.Errorf(err, "Error sending join message %+v", msg)
 		return err
 	}
 
@@ -110,7 +110,7 @@ func (s *SocketConnection) readMessages() error {
 	for {
 		_, message, err := s.ws.ReadMessage()
 		if err != nil {
-			log.Printf("err reading message %+v", err)
+			logger.Error(err, "err reading message")
 			s.ws.Close()
 			close(s.done)
 			return err
@@ -125,17 +125,17 @@ func (s *SocketConnection) readMessages() error {
 		case "offer":
 			params, ok := msg["params"].(map[string]interface{})
 			if !ok {
-				log.Printf("invalid params for offer %+v", msg["params"])
+				logger.Infof("invalid params for offer %+v", msg["params"])
 				continue
 			}
 			ty, ok := params["type"].(string)
 			if !ok {
-				log.Printf("invalid type for offer %+v", params["type"])
+				logger.Infof("invalid type for offer %+v", params["type"])
 				continue
 			}
 			sdp, ok := params["sdp"].(string)
 			if !ok {
-				log.Printf("invalid sdp for offer %+v", params["sdp"])
+				logger.Infof("invalid sdp for offer %+v", params["sdp"])
 				continue
 			}
 
@@ -143,37 +143,37 @@ func (s *SocketConnection) readMessages() error {
 
 			if s.onOffer != nil {
 				if err := s.onOffer(offer); err != nil {
-					log.Printf("error calling onOffer with offer %+v", offer)
+					logger.Errorf(err, "error calling onOffer with offer %+v", offer)
 				}
 			}
 		case "trickle":
 			params, ok := msg["params"].(map[string]interface{})
 			if !ok {
-				log.Printf("invalid params for trickle %+v", msg["params"])
+				logger.Infof("invalid params for trickle %+v", msg["params"])
 				continue
 			}
 
 			paramsJson, err := json.Marshal(params)
 			if err != nil {
-				log.Printf("error marshalling trickle params %+v", err)
+				logger.Error(err, "error marshalling trickle params")
 				continue
 			}
 
 			var trickle Trickle
 
 			if err = json.Unmarshal(paramsJson, &trickle); err != nil {
-				log.Printf("error unmarshalling trickle params %+v", err)
+				logger.Error(err, "error unmarshalling trickle params")
 				continue
 			}
 
 			if s.onTrickle != nil {
 				if err := s.onTrickle(trickle.Candidate, 1); err != nil {
-					log.Printf("error calling onTrickle with candidate %+v", trickle)
+					logger.Errorf(err, "error calling onTrickle with candidate %+v", trickle)
 				}
 			}
 
 		default:
-			log.Printf("got unhandled message: %+v", msg)
+			logger.Infof("got unhandled message: %+v", msg)
 		}
 
 	}

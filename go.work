@@ -3,3 +3,4 @@ go 1.20
 use ./rtc
 use ./client
 use ./speaker
+use ./log

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"math"
 
 	"github.com/pion/rtp"
@@ -63,7 +62,7 @@ func (a *AudioEngine) Out() <-chan *rtp.Packet {
 }
 
 func (a *AudioEngine) Start() {
-	log.Print("Starting audio engine")
+	logger.Info("Starting audio engine")
 	go a.decode()
 }
 
@@ -78,21 +77,21 @@ func (a *AudioEngine) decode() {
 	for {
 		pkt, ok := <-a.rtpIn
 		if !ok {
-			log.Print("rtpIn channel closed...")
+			logger.Info("rtpIn channel closed...")
 			return
 		}
 		// log.Printf("got pkt of size %d", len(pkt.Payload))
 		if pkt.SequenceNumber == 0 {
-			log.Print("Resetting timestamp bc sequencenumber 0...")
+			logger.Debug("Resetting timestamp bc sequencenumber 0...")
 			a.firstTimeStamp = &pkt.Timestamp
 		}
 		if a.firstTimeStamp == nil {
-			log.Print("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
+			logger.Debug("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
 			a.firstTimeStamp = &pkt.Timestamp
 		}
 
 		if _, err := a.decodePacket(pkt); err != nil {
-			log.Fatalf("error decoding opus packet %+v", err)
+			logger.Fatal(err, "error decoding opus packet")
 		} else {
 
 			// log.Printf("decoded %d bytes", n)
@@ -107,13 +106,9 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 	_, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm)
 	// we decode to float32 here since that is what whisper.cpp takes
 	if err != nil {
-		log.Printf("error decoding fb packet %+v", err)
+		logger.Error(err, "error decoding fb packet")
 		return 0, err
 	} else {
-		// log.Printf("decoded %d FB samples", n)
-		// log.Printf("decoded %d samples", len(a.pcm))
-		// log.Printf("timestamps %d %d", pkt.Timestamp, *a.firstTimeStamp)
-		// log.Printf("Calc %d", (pkt.Timestamp-(*a.firstTimeStamp))/(sampleRate*3))
 		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
 		lengthOfRecording := uint32(len(a.pcm)) * 3
 		timestampRecordingEnds := timestampMS + lengthOfRecording
