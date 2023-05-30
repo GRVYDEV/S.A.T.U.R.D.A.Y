@@ -85,6 +85,15 @@ func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
 	return answer, nil
 }
 
+func (c PeerConn) GetOffer() (webrtc.SessionDescription, error) {
+	var offer = webrtc.SessionDescription{}
+	offer, err := c.conn.CreateOffer(nil)
+	if err != nil {
+		return offer, err
+	}
+	return offer, c.conn.SetLocalDescription(offer)
+}
+
 func (c PeerConn) AddIceCandidate(candidate webrtc.ICECandidateInit) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()

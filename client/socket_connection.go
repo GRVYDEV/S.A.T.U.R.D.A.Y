@@ -24,10 +24,10 @@ type JoinConfig struct {
 // TODO move these to core
 // Join message sent when initializing a peer connection
 type Join struct {
-	SID    string                     `json:"sid"`
-	UID    string                     `json:"uid"`
-	Offer  *webrtc.SessionDescription `json:"offer,omitempty"`
-	Config JoinConfig                 `json:"config,omitempty"`
+	SID    string                    `json:"sid"`
+	UID    string                    `json:"uid"`
+	Offer  webrtc.SessionDescription `json:"offer,omitempty"`
+	Config JoinConfig                `json:"config,omitempty"`
 }
 
 // Negotiation message sent when renegotiating the peer connection
@@ -53,6 +53,8 @@ type SocketConnection struct {
 
 	// called when we get a remote offer
 	onOffer func(offer webrtc.SessionDescription) error
+	// called when we get a remote answer
+	onAnswer func(ans webrtc.SessionDescription) error
 	// called when we get a remote candidate
 	onTrickle func(candidate webrtc.ICECandidateInit, target int) error
 }
@@ -72,11 +74,15 @@ func (s *SocketConnection) SetOnOffer(onOffer func(offer webrtc.SessionDescripti
 	s.onOffer = onOffer
 }
 
+func (s *SocketConnection) SetOnAnswer(onAnswer func(ans webrtc.SessionDescription) error) {
+	s.onAnswer = onAnswer
+}
+
 func (s *SocketConnection) SetOnTrickle(onTrickle func(candidate webrtc.ICECandidateInit, target int) error) {
 	s.onTrickle = onTrickle
 }
 
-func (s *SocketConnection) Connect(room string) error {
+func (s *SocketConnection) Connect() error {
 	c, _, err := websocket.DefaultDialer.Dial(s.url.String(), nil)
 	if err != nil {
 		logger.Error(err, "dial err")
@@ -84,25 +90,26 @@ func (s *SocketConnection) Connect(room string) error {
 	}
 
 	s.ws = c
+	return nil
+}
 
+func (s *SocketConnection) Join(room string, offer webrtc.SessionDescription) error {
 	msg := Message[Join]{
 		Method: "join",
 		Params: Join{
-			SID: room,
-			UID: "SaturdayClient",
-			Config: JoinConfig{
-				NoPublish: true,
-			},
+			SID:   room,
+			UID:   "SaturdayClient",
+			Offer: offer,
 		},
 	}
 
-	if err = s.sendMessage(msg); err != nil {
+	if err := s.sendMessage(msg); err != nil {
 		logger.Errorf(err, "Error sending join message %+v", msg)
 		return err
 	}
 
 	go s.readMessages()
-	return err
+	return nil
 }
 
 func (s *SocketConnection) readMessages() error {
@@ -172,7 +179,29 @@ func (s *SocketConnection) readMessages() error {
 			}
 
 		default:
-			logger.Infof("got unhandled message: %+v", msg)
+			res, ok := msg["result"].(map[string]interface{})
+			if !ok {
+				logger.Infof("got unhandled message: %+v", msg)
+				continue
+			}
+			sdp, ok := res["sdp"].(string)
+			if !ok {
+				logger.Infof("invalid sdp for answer %+v", res["sdp"])
+				continue
+			}
+			ty, ok := res["type"].(string)
+			if !ok {
+				logger.Infof("invalid sdp type for answer %+v", res["type"])
+				continue
+			}
+			answer := webrtc.SessionDescription{Type: webrtc.NewSDPType(ty), SDP: sdp}
+
+			if s.onAnswer != nil {
+				if err := s.onAnswer(answer); err != nil {
+					logger.Errorf(err, "error calling onAnswer with answer %+v", answer)
+				}
+			}
+
 		}
 
 	}

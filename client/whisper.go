@@ -20,9 +20,9 @@ type Transcription struct {
 }
 
 type TranscriptionSegment struct {
-	startTimestamp uint32
-	endTimestamp   uint32
-	text           string
+	startTimestamp uint32 `json:"start_timestamp"`
+	endTimestamp   uint32 `json:"end_timestamp"`
+	text           string `json:"text"`
 }
 
 func NewWhisperModel() (*WhisperModel, error) {

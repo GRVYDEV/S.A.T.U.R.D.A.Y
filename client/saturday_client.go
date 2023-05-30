@@ -24,11 +24,20 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 	transcriptionStream := make(chan TranscriptionSegment, 100)
 	ae, err := NewAudioEngine(transcriptionStream)
 	if err != nil {
-		logger.Fatalf(err, "failed to create audio engine")
+		logger.Fatal(err, "failed to create audio engine")
 	}
 	ws := NewSocketConnection(config.Url)
 
-	rtc := NewRTCConnection(ws.SendTrickle, ae.In())
+	rtc, err := NewRTCConnection(RTCConnectionParams{
+		trickleFn: func(candidate *webrtc.ICECandidate, target int) error {
+			return ws.SendTrickle(candidate, target)
+		},
+		rtpChan:             ae.In(),
+		transcriptionStream: transcriptionStream,
+	})
+	if err != nil {
+		logger.Fatal(err, "failed to create RTCConnection")
+	}
 
 	s := &SaturdayClient{
 		ws:     ws,
@@ -38,17 +47,14 @@ func NewSaturdayClient(config SaturdayConfig) *SaturdayClient {
 	}
 
 	s.ws.SetOnOffer(s.OnOffer)
+	s.ws.SetOnAnswer(s.OnAnswer)
 	s.ws.SetOnTrickle(s.rtc.OnTrickle)
 
-	// Starting a new goroutine to read from the channel
-	go func() {
-		for transcription := range transcriptionStream {
-			// Process the received transcription here
-			// For now, we will just log it
-			logger.Infof("Received transcription: %s", transcription.text)
-		}
-	}()
 	return s
+}
+
+func (s *SaturdayClient) OnAnswer(answer webrtc.SessionDescription) error {
+	return s.rtc.SetAnswer(answer)
 }
 
 func (s *SaturdayClient) OnOffer(offer webrtc.SessionDescription) error {
@@ -62,8 +68,16 @@ func (s *SaturdayClient) OnOffer(offer webrtc.SessionDescription) error {
 }
 
 func (s *SaturdayClient) Start() error {
-	if err := s.ws.Connect(s.config.Room); err != nil {
+	if err := s.ws.Connect(); err != nil {
 		logger.Error(err, "error connecting to websocket")
+		return err
+	}
+	offer, err := s.rtc.GetOffer()
+	if err != nil {
+		logger.Error(err, "error getting intial offer")
+	}
+	if err := s.ws.Join(s.config.Room, offer); err != nil {
+		logger.Error(err, "error joining room")
 		return err
 	}
 
