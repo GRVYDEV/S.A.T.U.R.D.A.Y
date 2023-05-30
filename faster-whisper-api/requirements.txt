@@ -1,0 +1,5 @@
+fastapi==0.95.2
+faster_whisper==0.6.0
+numpy==1.24.3
+pydantic==1.10.8
+uvicorn==0.22.0

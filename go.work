@@ -1,6 +1,11 @@
 go 1.20
 
 use ./rtc
+
 use ./client
+
+use ./whisper-api
+
 use ./speaker
+
 use ./log

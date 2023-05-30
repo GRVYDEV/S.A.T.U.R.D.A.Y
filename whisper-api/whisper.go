@@ -2,11 +2,20 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"math"
 	"runtime"
 	"time"
 
+	logr "S.A.T.U.R.D.A.Y/log"
 	whisper "github.com/ggerganov/whisper.cpp/bindings/go"
+	"github.com/rs/zerolog"
+)
+
+var debug = flag.Bool("debug", false, "print debug logs")
+
+var (
+	logger = logr.New()
 )
 
 type WhisperModel struct {
@@ -14,18 +23,11 @@ type WhisperModel struct {
 	params whisper.Params
 }
 
-type Transcription struct {
-	from           uint32
-	transcriptions []TranscriptionSegment
-}
-
-type TranscriptionSegment struct {
-	StartTimestamp uint32 `json:"start_timestamp"`
-	EndTimestamp   uint32 `json:"end_timestamp"`
-	Text           string `json:"text"`
-}
-
 func NewWhisperModel() (*WhisperModel, error) {
+	flag.Parse()
+	if !*debug {
+		logr.SetGlobalOptions(logr.GlobalConfig{V: int(zerolog.DebugLevel)})
+	}
 	ctx := whisper.Whisper_init("./models/ggml-base.en.bin")
 	if ctx == nil {
 		return nil, errors.New("failed to initialize whisper")
@@ -47,26 +49,25 @@ func NewWhisperModel() (*WhisperModel, error) {
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
 
-func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (Transcription, error) {
+func (w *WhisperModel) Process(samples []float32) (error, Transcription) {
 	start := time.Now()
 	transcription := Transcription{}
-	transcription.from = recordingStartTime
 	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
-		return transcription, err
+		return err, transcription
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
 		for i := 0; i < segments; i++ {
 			trasncriptionSegment := TranscriptionSegment{}
 
-			trasncriptionSegment.StartTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i)*10) + recordingStartTime
-			trasncriptionSegment.EndTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i)*10) + recordingStartTime
+			trasncriptionSegment.StartTimestamp = w.ctx.Whisper_full_get_segment_t0(i) * 10
+			trasncriptionSegment.EndTimestamp = w.ctx.Whisper_full_get_segment_t1(i) * 10
 
 			trasncriptionSegment.Text = w.ctx.Whisper_full_get_segment_text(i)
 
-			transcription.transcriptions = append(transcription.transcriptions, trasncriptionSegment)
+			transcription.Transcriptions = append(transcription.Transcriptions, trasncriptionSegment)
 		}
 	}
 	elapsed := time.Since(start)
 	logger.Debugf("Process took %s", elapsed)
-	return transcription, nil
+	return nil, transcription
 }
