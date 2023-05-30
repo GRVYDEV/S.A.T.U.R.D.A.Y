@@ -1,4 +1,4 @@
-import { generateRandomString, decodeDatachannelMessage } from "./util.js";
+import { generateRandomString } from "./util.js";
 
 export class Client {
   constructor(stream, noPub, noSub, room, useDockerWs) {
@@ -53,15 +53,6 @@ export class Client {
 
       this.sub.ontrack = (e) => {
         console.log("houston we have a track", e);
-      };
-      this.sub.ondatachannel = (e) => {
-        const { channel } = e;
-        console.log("got chan", channel);
-        if (channel.label === "transcriptions") {
-          channel.onmessage = (msg) => {
-            decodeDatachannelMessage(msg.data);
-          };
-        }
       };
     }
   }

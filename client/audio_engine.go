@@ -80,24 +80,13 @@ func (a *AudioEngine) decode() {
 			logger.Info("rtpIn channel closed...")
 			return
 		}
-		// log.Printf("got pkt of size %d", len(pkt.Payload))
-		if pkt.SequenceNumber == 0 {
-			logger.Info("Resetting timestamp bc sequencenumber 0...")
-			a.firstTimeStamp = &pkt.Timestamp
-		}
 		if a.firstTimeStamp == nil {
-			logger.Info("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
+			logger.Debug("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
 			a.firstTimeStamp = &pkt.Timestamp
 		}
 
 		if _, err := a.decodePacket(pkt); err != nil {
-			logger.Fatal(err, "error decoding opus packet")
-		} else {
-
-			// log.Printf("decoded %d bytes", n)
-			// if _, err = f.Write(a.buf[:n]); err != nil {
-			// 	log.Fatalf("error writing to file %+v", err)
-			// }
+			logger.Error(err, "error decoding opus packet ")
 		}
 	}
 }
@@ -110,7 +99,7 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 		return 0, err
 	} else {
 		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
-		lengthOfRecording := uint32(len(a.pcm) / (sampleRate / 1000))
+		lengthOfRecording := uint32(len(a.pcm)) * 3
 		timestampRecordingEnds := timestampMS + lengthOfRecording
 		a.we.Write(a.pcm, timestampRecordingEnds)
 		return convertToBytes(a.pcm, a.buf), nil

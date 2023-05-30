@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net/url"
+	"os"
 
 	logr "S.A.T.U.R.D.A.Y/log"
 	"github.com/rs/zerolog"
@@ -19,12 +20,20 @@ func main() {
 	if !*debug {
 		logr.SetGlobalOptions(logr.GlobalConfig{V: int(zerolog.DebugLevel)})
 	}
-	logger.Debug("hello")
-	logger.Info("hello info")
 
-	u := url.URL{Scheme: "ws", Host: "localhost:8088", Path: "/ws"}
+	url_env := os.Getenv("URL")
+	if url_env == "" {
+		url_env = "localhost:8088"
+	}
 
-	sc := NewSaturdayClient(SaturdayConfig{Room: "test", Url: u})
+	room := os.Getenv("ROOM")
+	if room == "" {
+		room = "test"
+	}
+
+	url_scheme := url.URL{Scheme: "ws", Host: url_env, Path: "/ws"}
+
+	sc := NewSaturdayClient(SaturdayConfig{Room: room, Url: url_scheme})
 
 	logger.Info("Starting Saturday Client...")
 

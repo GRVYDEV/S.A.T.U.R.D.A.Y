@@ -173,7 +173,7 @@ func (s *SocketConnection) readMessages() error {
 			}
 
 			if s.onTrickle != nil {
-				if err := s.onTrickle(trickle.Candidate, trickle.Target); err != nil {
+				if err := s.onTrickle(trickle.Candidate, 1); err != nil {
 					logger.Errorf(err, "error calling onTrickle with candidate %+v", trickle)
 				}
 			}

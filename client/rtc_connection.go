@@ -71,7 +71,6 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		logger.Info("data channel opened...")
 
 		for transcription := range params.transcriptionStream {
-			logger.Infof("got transcript %s", transcription.Text)
 			data, err := json.Marshal(transcription)
 			if err != nil {
 				logger.Error(err, "error marshalling transcript")
@@ -104,7 +103,7 @@ func (r *RTCConnection) GetOffer() (webrtc.SessionDescription, error) {
 }
 
 func (r *RTCConnection) SetAnswer(answer webrtc.SessionDescription) error {
-	return r.pub.SetAnswer(answer)
+	return r.pub.conn.SetRemoteDescription(answer)
 }
 
 func (r *RTCConnection) OnOffer(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
