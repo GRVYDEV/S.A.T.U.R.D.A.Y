@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Set up a file server to serve the `./web` directory under the `/` path
-	http.Handle("/", http.FileServer(http.Dir("./web")))
+	http.Handle("/", http.FileServer(http.Dir("../web")))
 
 	// Set up a handler function for the `/ws` path
 	http.HandleFunc("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
