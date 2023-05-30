@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -14,13 +15,19 @@ type RTCConnection struct {
 	rtpIn chan<- *rtp.Packet
 }
 
-func NewRTCConnection(trickleFn func(*webrtc.ICECandidate, int) error, rtpIn chan<- *rtp.Packet) *RTCConnection {
+type RTCConnectionParams struct {
+	trickleFn           func(*webrtc.ICECandidate, int) error
+	rtpChan             chan<- *rtp.Packet
+	transcriptionStream <-chan TranscriptionSegment
+}
+
+func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 	rtc := &RTCConnection{
-		rtpIn: rtpIn,
+		rtpIn: params.rtpChan,
 	}
 
 	sub := NewPeerConn(func(candidate *webrtc.ICECandidate) {
-		trickleFn(candidate, 1)
+		params.trickleFn(candidate, 1)
 	})
 	sub.conn.OnTrack(func(t *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
 		kind := "unknown kind"
@@ -45,11 +52,37 @@ func NewRTCConnection(trickleFn func(*webrtc.ICECandidate, int) error, rtpIn cha
 	rtc.sub = sub
 
 	pub := NewPeerConn(func(candidate *webrtc.ICECandidate) {
-		trickleFn(candidate, 0)
+		params.trickleFn(candidate, 0)
+	})
+
+	ordered := true
+	maxRetransmits := uint16(0)
+
+	dc, err := pub.conn.CreateDataChannel(
+		"transcriptions",
+		&webrtc.DataChannelInit{
+			Ordered:        &ordered,
+			MaxRetransmits: &maxRetransmits,
+		})
+	if err != nil {
+		return nil, err
+	}
+	dc.OnOpen(func() {
+		logger.Info("data channel opened...")
+
+		for transcription := range params.transcriptionStream {
+			data, err := json.Marshal(transcription)
+			if err != nil {
+				logger.Error(err, "error marshalling transcript")
+				continue
+			}
+			logger.Debugf("sending transcript %+v on data channel", transcription)
+			dc.Send(data)
+		}
 	})
 	rtc.pub = pub
 
-	return rtc
+	return rtc, err
 }
 
 func (r *RTCConnection) OnTrickle(candidate webrtc.ICECandidateInit, target int) error {
@@ -63,6 +96,14 @@ func (r *RTCConnection) OnTrickle(candidate webrtc.ICECandidateInit, target int)
 		logger.Error(err, "error OnTrickle")
 		return err
 	}
+}
+
+func (r *RTCConnection) GetOffer() (webrtc.SessionDescription, error) {
+	return r.pub.GetOffer()
+}
+
+func (r *RTCConnection) SetAnswer(answer webrtc.SessionDescription) error {
+	return r.pub.conn.SetRemoteDescription(answer)
 }
 
 func (r *RTCConnection) OnOffer(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
