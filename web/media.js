@@ -1,7 +1,7 @@
 export async function getMedia() {
   try {
     return await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: { noiseSuppression: true },
       video: true,
     });
   } catch (err) {

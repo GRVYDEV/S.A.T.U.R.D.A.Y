@@ -20,9 +20,9 @@ type Transcription struct {
 }
 
 type TranscriptionSegment struct {
-	startTimestamp uint32 `json:"start_timestamp"`
-	endTimestamp   uint32 `json:"end_timestamp"`
-	text           string `json:"text"`
+	StartTimestamp uint32 `json:"start_timestamp"`
+	EndTimestamp   uint32 `json:"end_timestamp"`
+	Text           string `json:"text"`
 }
 
 func NewWhisperModel() (*WhisperModel, error) {
@@ -47,26 +47,26 @@ func NewWhisperModel() (*WhisperModel, error) {
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
 
-func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (error, Transcription) {
+func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (Transcription, error) {
 	start := time.Now()
 	transcription := Transcription{}
 	transcription.from = recordingStartTime
 	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
-		return err, transcription
+		return transcription, err
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
 		for i := 0; i < segments; i++ {
 			trasncriptionSegment := TranscriptionSegment{}
 
-			trasncriptionSegment.startTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i) * 10)
-			trasncriptionSegment.endTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i) * 10)
+			trasncriptionSegment.StartTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i)*10) + recordingStartTime
+			trasncriptionSegment.EndTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i)*10) + recordingStartTime
 
-			trasncriptionSegment.text = w.ctx.Whisper_full_get_segment_text(i)
+			trasncriptionSegment.Text = w.ctx.Whisper_full_get_segment_text(i)
 
 			transcription.transcriptions = append(transcription.transcriptions, trasncriptionSegment)
 		}
 	}
 	elapsed := time.Since(start)
 	logger.Debugf("Process took %s", elapsed)
-	return nil, transcription
+	return transcription, nil
 }

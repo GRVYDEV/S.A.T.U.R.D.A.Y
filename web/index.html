@@ -3,17 +3,26 @@
   <head>
     <title>Hello, World!</title>
     <style type="text/css">
-      #local {
-        position: absolute;
-        top: 50%;
-        left: 50%;
+      #media #local {
         transform: translate(-50%, -50%);
+        width: 50%;
       }
     </style>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="./index.js"></script>
   </head>
 
   <body>
-    <video id="local" autoplay></video>
+    <div class="flex w-1/2 flex-col mx-auto h-screen">
+      <div class="flex flex-col my-auto">
+        <h1 class="text-3xl font-bold my-6">Project S.A.T.U.R.D.A.Y</h1>
+        <video id="local" autoplay></video>
+        <h1 class="text-2xl font-semibold my-4">Transcriptions:</h1>
+        <div
+          id="transcriptions"
+          class="text-lg text-gray-500 p-4 border-2 border-gray-700 rounded-md"
+        ></div>
+      </div>
+    </div>
   </body>
 </html>

@@ -63,8 +63,6 @@ func (c PeerConn) Offer(offer webrtc.SessionDescription) error {
 
 func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
 	var answer = webrtc.SessionDescription{}
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	answer, err := c.conn.CreateAnswer(nil)
 	if err != nil {
@@ -74,15 +72,25 @@ func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
 		return answer, err
 	}
 
-	for _, candidate := range c.pendingCandidates {
-		if err = c.conn.AddICECandidate(candidate); err != nil {
-			logger.Errorf(err, "error adding ice candidate %+v", candidate)
-		}
+	if err = c.flushCandidates(); err != nil {
+		logger.Error(err, "error flushing candidates in Answer")
 	}
 
-	c.pendingCandidates = make([]webrtc.ICECandidateInit, 0)
-
 	return answer, nil
+}
+
+func (c PeerConn) flushCandidates() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, candidate := range c.pendingCandidates {
+		if err := c.conn.AddICECandidate(candidate); err != nil {
+			logger.Errorf(err, "error adding ice candidate %+v", candidate)
+			return err
+		}
+	}
+	c.pendingCandidates = make([]webrtc.ICECandidateInit, 0)
+	return nil
 }
 
 func (c PeerConn) GetOffer() (webrtc.SessionDescription, error) {
@@ -92,6 +100,17 @@ func (c PeerConn) GetOffer() (webrtc.SessionDescription, error) {
 		return offer, err
 	}
 	return offer, c.conn.SetLocalDescription(offer)
+}
+
+func (c PeerConn) SetAnswer(answer webrtc.SessionDescription) error {
+	if err := c.conn.SetRemoteDescription(answer); err != nil {
+		return err
+	}
+
+	if err := c.flushCandidates(); err != nil {
+		logger.Error(err, "error flushing candidates in SetAnswer")
+	}
+	return nil
 }
 
 func (c PeerConn) AddIceCandidate(candidate webrtc.ICECandidateInit) error {
