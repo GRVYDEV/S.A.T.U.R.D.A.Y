@@ -1,4 +1,5 @@
 import { getMedia } from "./media.js";
+import { initializeDeviceSelect } from "./dom.js";
 import { Client } from "./client.js";
 
 // pubConnection.onconnectionstatechange((conn) => {
@@ -36,6 +37,9 @@ async function init() {
   const noSub = params.get("noSub") || false;
   const noPub = params.get("noPub") || false;
   const tester = params.get("tester") || false;
+  if (!tester) {
+    await initializeDeviceSelect();
+  }
   console.log(noPub);
   let stream;
   if (!noPub) {

@@ -76,8 +76,10 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 					if i == len(transcription.transcriptions)-1 {
 						break
 					}
-					// send on the chan
-					we.transcriptionStream <- segment
+					if segment.Text[0] != '(' && segment.Text[0] != '[' && segment.Text[0] != '.' {
+						// send on the chan
+						we.transcriptionStream <- segment
+					}
 					// if this is the second to last one then update last handled timestamp and chop the window
 					if i == len(transcription.transcriptions)-2 {
 						transcriptEnd := segment.EndTimestamp

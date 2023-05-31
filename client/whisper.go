@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"runtime"
+	"strings"
 	"time"
 
 	whisper "github.com/ggerganov/whisper.cpp/bindings/go"
@@ -61,7 +62,7 @@ func (w *WhisperModel) Process(samples []float32, recordingStartTime uint32) (Tr
 			trasncriptionSegment.StartTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i)*10) + recordingStartTime
 			trasncriptionSegment.EndTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i)*10) + recordingStartTime
 
-			trasncriptionSegment.Text = w.ctx.Whisper_full_get_segment_text(i)
+			trasncriptionSegment.Text = strings.TrimLeft(w.ctx.Whisper_full_get_segment_text(i), " ")
 
 			transcription.transcriptions = append(transcription.transcriptions, trasncriptionSegment)
 		}
