@@ -12,15 +12,47 @@
     <script type="module" src="./index.js"></script>
   </head>
 
-  <body>
+  <body class="bg-gray-900 antialiased">
     <div class="flex w-1/2 flex-col mx-auto h-screen">
       <div class="flex flex-col my-auto">
-        <h1 class="text-3xl font-bold my-6">Project S.A.T.U.R.D.A.Y</h1>
+        <h1 class="text-3xl font-bold my-6 text-white">
+          Project S.A.T.U.R.D.A.Y
+        </h1>
         <video id="local" autoplay></video>
-        <h1 class="text-2xl font-semibold my-4">Transcriptions:</h1>
+
+        <div class="flex w-full my-4">
+          <div class="flex flex-col w-full">
+            <label for="camera" class="text-white text-md my-2 font-semibold"
+              >Select Webcam</label
+            >
+            <select
+              name="camera"
+              id="camera"
+              class="py-4 px-3 pr-9 border block w-11/12 border-gray-600 rounded-md text-md focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-400"
+              disabled
+            >
+              <option selected disabled>Choose your camera</option>
+            </select>
+          </div>
+          <div class="flex flex-col w-full flex-wrap content-end">
+            <label for="mic" class="text-white text-md my-2 font-semibold"
+              >Select Microphone</label
+            >
+            <select
+              name="mic"
+              id="mic"
+              class="py-4 px-3 pr-9 border block w-11/12 border-gray-600 rounded-md text-md focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-400"
+              disabled
+            >
+              <option selected disabled>Choose your mic</option>
+            </select>
+          </div>
+        </div>
+
+        <h1 class="text-2xl font-semibold my-4 text-white">Transcriptions:</h1>
         <div
           id="transcriptions"
-          class="text-lg text-gray-500 p-4 border-2 border-gray-700 rounded-md"
+          class="text-lg text-gray-400 p-4 border-2 border-gray-700 rounded-md"
         ></div>
       </div>
     </div>
