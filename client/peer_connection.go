@@ -63,8 +63,6 @@ func (c PeerConn) Offer(offer webrtc.SessionDescription) error {
 
 func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
 	var answer = webrtc.SessionDescription{}
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	answer, err := c.conn.CreateAnswer(nil)
 	if err != nil {
