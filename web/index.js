@@ -1,4 +1,5 @@
 import { getMedia } from "./media.js";
+import { initializeDeviceSelect } from "./dom.js";
 import { Client } from "./client.js";
 
 // pubConnection.onconnectionstatechange((conn) => {
@@ -32,10 +33,13 @@ function handleOffer(offer) {}
 async function init() {
   const queryString = window.location.search;
   const params = new URLSearchParams(queryString);
-  const room = params.get("room") || "foo";
+  const room = params.get("room") || "test";
   const noSub = params.get("noSub") || false;
   const noPub = params.get("noPub") || false;
   const tester = params.get("tester") || false;
+  if (!tester) {
+    await initializeDeviceSelect();
+  }
   console.log(noPub);
   let stream;
   if (!noPub) {
