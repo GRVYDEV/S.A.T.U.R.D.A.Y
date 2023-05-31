@@ -19,6 +19,7 @@ endif
 
 ifeq ($(wildcard $(MODELS_DIR)/$(MODEL_FILE_NAME)),)
 	@echo "fetching model"
+	@mkdir -p $(MODELS_DIR)
 	@${MAKE} -C ../whisper.cpp base.en
 	@cp $(WHISPER_DIR)/models/ggml-$(MODEL_NAME).bin $(MODELS_DIR)
 endif
