@@ -76,6 +76,8 @@ func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 					if i == len(transcription.transcriptions)-1 {
 						break
 					}
+					// FIXME this is horrible. We need to figure out how to fix the whisper segmenting logic
+					// maybe look into seeding the context
 					if segment.Text[0] != '(' && segment.Text[0] != '[' && segment.Text[0] != '.' {
 						// send on the chan
 						we.transcriptionStream <- segment
