@@ -72,7 +72,6 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 
 		for transcription := range params.transcriptionStream {
 			logger.Infof("got transcript %s", transcription.Text)
-
 			data, err := json.Marshal(transcription)
 			if err != nil {
 				logger.Error(err, "error marshalling transcript")

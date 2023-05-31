@@ -50,6 +50,11 @@ func NewWhisperEngine(transcriptionStream chan TranscriptionSegment) (*WhisperEn
 func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	we.Lock()
 	defer we.Unlock()
+	if len(we.pcmWindow)+len(pcm) > pcmWindowSize {
+		// This shouldn't happen hopefully...
+		logger.Infof("GOING TO OVERFLOW PCM WINDOW BY %d", len(we.pcmWindow)+len(pcm)-pcmWindowSize)
+	}
+	we.pcmWindow = append(we.pcmWindow, pcm...)
 	if len(we.pcmWindow) >= pcmWindowSize {
 		// TODO make this run in a go routine
 		currentTime := Timestamp + whisperSampleWindowMs
