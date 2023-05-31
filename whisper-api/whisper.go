@@ -5,6 +5,7 @@ import (
 	"flag"
 	"math"
 	"runtime"
+	"strings"
 	"time"
 
 	logr "S.A.T.U.R.D.A.Y/log"
@@ -62,7 +63,7 @@ func (w *WhisperModel) Process(samples []float32) (error, Transcription) {
 			trasncriptionSegment.StartTimestamp = w.ctx.Whisper_full_get_segment_t0(i) * 10
 			trasncriptionSegment.EndTimestamp = w.ctx.Whisper_full_get_segment_t1(i) * 10
 
-			trasncriptionSegment.Text = w.ctx.Whisper_full_get_segment_text(i)
+			trasncriptionSegment.Text = strings.TrimLeft(w.ctx.Whisper_full_get_segment_text(i), " ")
 
 			transcription.Transcriptions = append(transcription.Transcriptions, trasncriptionSegment)
 		}
