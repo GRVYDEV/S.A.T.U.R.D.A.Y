@@ -47,7 +47,7 @@ def perform_transcription(transcription_request):
     # Here you can implement your transcription logic
     # and generate the Transcription object
     segments, info = model.transcribe(np.array(transcription_request, dtype=np.float32),
-                                      beam_size=5, vad_filter=True)
+                                      beam_size=5)
 
     return Transcription(transcriptions=[transform_segment(segment) for segment in segments])
 
