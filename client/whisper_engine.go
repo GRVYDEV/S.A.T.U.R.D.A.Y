@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -47,68 +46,76 @@ func NewWhisperEngine(transcriptionStream chan TranscriptionSegment) (*WhisperEn
 	}, nil
 }
 
+// endTimestamp is the latest packet timestamp + len of the audio in the packet
 func (we *WhisperEngine) Write(pcm []float32, Timestamp uint32) {
 	we.Lock()
 	defer we.Unlock()
 	if len(we.pcmWindow) >= pcmWindowSize {
 		// TODO make this run in a go routine
 		currentTime := Timestamp + whisperSampleWindowMs
-		err, transcription := we.runInference(currentTime)
+		transcription, err := we.runInference(currentTime)
 
 		if err == nil {
-			var buffer []TranscriptionSegment
-			logger.Debugf("Got %d segments start %d", len(transcription.Transcriptions), transcription.From)
-			//foreach of these transcription.transcriptions if there is a segment that is not the last add it to a buffer
-			for i, segment := range transcription.Transcriptions {
-				logger.Debugf("Segment %d %d- %d: %s", i, transcription.From+segment.StartTimestamp, transcription.From+segment.EndTimestamp, segment.Text)
-				// If the segment is not the last one, add it to the buffer
-				if i != len(transcription.Transcriptions)-1 {
-					buffer = append(buffer, segment)
+			logger.Infof("Got %d segments start %d", len(transcription.Transcriptions), transcription.From)
+			// if there is more than one segment then send all except the last, slide the whisper window and update the timestamp
+			if len(transcription.Transcriptions) > 1 {
+				for i, segment := range transcription.Transcriptions {
+					// if this is the last one do nothing
+					if i == len(transcription.Transcriptions)-1 {
+						break
+					}
+					// send on the chan
 					we.transcriptionStream <- segment
-					we.lastHandledTimestamp = transcription.From + segment.EndTimestamp
+					// if this is the second to last one then update last handled timestamp and chop the window
+					if i == len(transcription.Transcriptions)-2 {
+						transcriptEnd := transcription.From + segment.EndTimestamp
+						transcriptLen := transcriptEnd - we.lastHandledTimestamp
+						windowDelta := transcriptLen * whisperSampleRateMs
+
+						we.whisperWindow = we.whisperWindow[windowDelta:]
+						we.lastHandledTimestamp = transcriptEnd
+
+						logger.Infof("new endTimestamp: %d", we.lastHandledTimestamp)
+					}
+
 				}
 			}
-			logger.Debugf("new endTimestamp: ", we.lastHandledTimestamp)
-
 		} else {
 			logger.Error(err, "error running inference")
 		}
 	}
 }
 
-func (we *WhisperEngine) runInference(addedRecordingStartTime uint32) (error, Transcription) {
+// endTimestamp is the latest packet timestamp + len of the audio in the packet
+func (we *WhisperEngine) runInference(endTimestamp uint32) (Transcription, error) {
 	var (
 		whisperWinLen = len(we.whisperWindow)
 		pcmWinLen     = len(we.pcmWindow)
 	)
 
-	if whisperWinLen+pcmWinLen < whisperWindowMinSize {
+	if whisperWinLen == whisperWindowSize || whisperWinLen+pcmWinLen > whisperWindowSize {
+		// we have a full window or we might overflow
+		// we need to drop the oldest samples and append the newest ones
+		we.whisperWindow = append(we.whisperWindow[pcmWinLen:], we.pcmWindow...)
+		// we also need to increment the last handled timestamp by the number of samples we slid the window
+		we.lastHandledTimestamp += uint32(pcmWinLen) * whisperSampleRateMs
+		// empty the pcm window so we can add new samples
+		we.pcmWindow = we.pcmWindow[:0]
+	} else if whisperWinLen+pcmWinLen < whisperWindowMinSize {
 		// we dont have enough audio to run inference so add the pcmWindow and return
 		message := fmt.Sprintf("not enough audio we only have %d samples continuing...", whisperWinLen)
 		we.whisperWindow = append(we.whisperWindow, we.pcmWindow...)
 		we.pcmWindow = we.pcmWindow[:0]
-		return errors.New(message), Transcription{}
+		return Transcription{}, errors.New(message)
 	} else {
 		// we have enough audio to run inference
 		we.whisperWindow = append(we.whisperWindow, we.pcmWindow...)
 		we.pcmWindow = we.pcmWindow[:0]
 	}
 
-	whisperWindowStartTimestamp := addedRecordingStartTime - uint32(len(we.whisperWindow)/whisperSampleRateMs)
-	timestampTranscriptionStartsFrom := whisperWindowStartTimestamp
-	log.Print("whisperWindowStartTimestamp: ", whisperWindowStartTimestamp)
-
-	if we.lastHandledTimestamp > 0 && we.lastHandledTimestamp > whisperWindowStartTimestamp {
-		delteToCutFromTheStart := (we.lastHandledTimestamp - whisperWindowStartTimestamp) * whisperSampleRateMs
-		we.whisperWindow = we.whisperWindow[delteToCutFromTheStart:]
-		timestampTranscriptionStartsFrom = we.lastHandledTimestamp
-		log.Print("we.lastHandledTimestamp: ", we.lastHandledTimestamp)
-		log.Print("length: ", uint32(len(we.whisperWindow)/whisperSampleRateMs))
-	}
-
 	logger.Debugf("running whisper inference with %d window length", len(we.whisperWindow))
 	err, value := callTranscriptionAPI(we.whisperWindow)
-	value.From = timestampTranscriptionStartsFrom
-	return err, value
+	value.From = we.lastHandledTimestamp
+	return value, err
 
 }

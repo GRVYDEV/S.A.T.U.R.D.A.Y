@@ -103,7 +103,7 @@ func (r *RTCConnection) GetOffer() (webrtc.SessionDescription, error) {
 }
 
 func (r *RTCConnection) SetAnswer(answer webrtc.SessionDescription) error {
-	return r.pub.conn.SetRemoteDescription(answer)
+	return r.pub.SetAnswer(answer)
 }
 
 func (r *RTCConnection) OnOffer(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
