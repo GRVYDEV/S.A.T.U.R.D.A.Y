@@ -6,7 +6,7 @@ from typing import List
 from faster_whisper import WhisperModel
 
 app = FastAPI()
-model = WhisperModel("small", device="cpu", compute_type="int8")
+model = WhisperModel("small", device="cuda", compute_type="int8")
 
 
 class TranscriptionSegment(BaseModel):
