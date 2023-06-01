@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -85,7 +85,7 @@ func (s *SocketConnection) SetOnTrickle(onTrickle func(candidate webrtc.ICECandi
 func (s *SocketConnection) Connect() error {
 	c, _, err := websocket.DefaultDialer.Dial(s.url.String(), nil)
 	if err != nil {
-		logger.Error(err, "dial err")
+		Logger.Error(err, "dial err")
 		return err
 	}
 
@@ -104,7 +104,7 @@ func (s *SocketConnection) Join(room string, offer webrtc.SessionDescription) er
 	}
 
 	if err := s.sendMessage(msg); err != nil {
-		logger.Errorf(err, "Error sending join message %+v", msg)
+		Logger.Errorf(err, "Error sending join message %+v", msg)
 		return err
 	}
 
@@ -116,7 +116,7 @@ func (s *SocketConnection) readMessages() error {
 	for {
 		_, message, err := s.ws.ReadMessage()
 		if err != nil {
-			logger.Error(err, "err reading message")
+			Logger.Error(err, "err reading message")
 			s.ws.Close()
 			close(s.done)
 			return err
@@ -131,17 +131,17 @@ func (s *SocketConnection) readMessages() error {
 		case "offer":
 			params, ok := msg["params"].(map[string]interface{})
 			if !ok {
-				logger.Infof("invalid params for offer %+v", msg["params"])
+				Logger.Infof("invalid params for offer %+v", msg["params"])
 				continue
 			}
 			ty, ok := params["type"].(string)
 			if !ok {
-				logger.Infof("invalid type for offer %+v", params["type"])
+				Logger.Infof("invalid type for offer %+v", params["type"])
 				continue
 			}
 			sdp, ok := params["sdp"].(string)
 			if !ok {
-				logger.Infof("invalid sdp for offer %+v", params["sdp"])
+				Logger.Infof("invalid sdp for offer %+v", params["sdp"])
 				continue
 			}
 
@@ -149,56 +149,56 @@ func (s *SocketConnection) readMessages() error {
 
 			if s.onOffer != nil {
 				if err := s.onOffer(offer); err != nil {
-					logger.Errorf(err, "error calling onOffer with offer %+v", offer)
+					Logger.Errorf(err, "error calling onOffer with offer %+v", offer)
 				}
 			}
 		case "trickle":
 			params, ok := msg["params"].(map[string]interface{})
 			if !ok {
-				logger.Infof("invalid params for trickle %+v", msg["params"])
+				Logger.Infof("invalid params for trickle %+v", msg["params"])
 				continue
 			}
 
 			paramsJson, err := json.Marshal(params)
 			if err != nil {
-				logger.Error(err, "error marshalling trickle params")
+				Logger.Error(err, "error marshalling trickle params")
 				continue
 			}
 
 			var trickle Trickle
 
 			if err = json.Unmarshal(paramsJson, &trickle); err != nil {
-				logger.Error(err, "error unmarshalling trickle params")
+				Logger.Error(err, "error unmarshalling trickle params")
 				continue
 			}
 
 			if s.onTrickle != nil {
 				if err := s.onTrickle(trickle.Candidate, trickle.Target); err != nil {
-					logger.Errorf(err, "error calling onTrickle with candidate %+v", trickle)
+					Logger.Errorf(err, "error calling onTrickle with candidate %+v", trickle)
 				}
 			}
 
 		default:
 			res, ok := msg["result"].(map[string]interface{})
 			if !ok {
-				logger.Infof("got unhandled message: %+v", msg)
+				Logger.Infof("got unhandled message: %+v", msg)
 				continue
 			}
 			sdp, ok := res["sdp"].(string)
 			if !ok {
-				logger.Infof("invalid sdp for answer %+v", res["sdp"])
+				Logger.Infof("invalid sdp for answer %+v", res["sdp"])
 				continue
 			}
 			ty, ok := res["type"].(string)
 			if !ok {
-				logger.Infof("invalid sdp type for answer %+v", res["type"])
+				Logger.Infof("invalid sdp type for answer %+v", res["type"])
 				continue
 			}
 			answer := webrtc.SessionDescription{Type: webrtc.NewSDPType(ty), SDP: sdp}
 
 			if s.onAnswer != nil {
 				if err := s.onAnswer(answer); err != nil {
-					logger.Errorf(err, "error calling onAnswer with answer %+v", answer)
+					Logger.Errorf(err, "error calling onAnswer with answer %+v", answer)
 				}
 			}
 
@@ -220,7 +220,7 @@ func (s *SocketConnection) SendTrickle(candidate *webrtc.ICECandidate, target in
 		},
 	}
 
-	logger.Debug("Sending trickle")
+	Logger.Debug("Sending trickle")
 
 	return s.sendMessage(msg)
 }
@@ -233,7 +233,7 @@ func (s *SocketConnection) SendAnswer(answer webrtc.SessionDescription) error {
 		},
 	}
 
-	logger.Debug("Sending answer")
+	Logger.Debug("Sending answer")
 
 	return s.sendMessage(msg)
 }
@@ -241,12 +241,12 @@ func (s *SocketConnection) SendAnswer(answer webrtc.SessionDescription) error {
 func (s *SocketConnection) sendMessage(msg any) error {
 	payload, err := json.Marshal(msg)
 	if err != nil {
-		logger.Errorf(err, "Error marshaling message to json %+v", msg)
+		Logger.Errorf(err, "Error marshaling message to json %+v", msg)
 		return err
 	}
-	logger.Debugf("Sending message %s", payload)
+	Logger.Debugf("Sending message %s", payload)
 	if err := s.ws.WriteMessage(websocket.TextMessage, payload); err != nil {
-		logger.Errorf(err, "Error sending websocket message %+v", msg)
+		Logger.Errorf(err, "Error sending websocket message %+v", msg)
 		return err
 	}
 	return nil

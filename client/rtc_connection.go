@@ -1,9 +1,11 @@
-package main
+package client
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"S.A.T.U.R.D.A.Y/stt/engine"
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
@@ -18,7 +20,7 @@ type RTCConnection struct {
 type RTCConnectionParams struct {
 	trickleFn           func(*webrtc.ICECandidate, int) error
 	rtpChan             chan<- *rtp.Packet
-	transcriptionStream <-chan TranscriptionSegment
+	transcriptionStream <-chan engine.TranscriptionSegment
 }
 
 func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
@@ -39,14 +41,14 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 				for {
 					pkt, _, err := t.ReadRTP()
 					if err != nil {
-						logger.Error(err, "err reading rtp")
+						Logger.Error(err, "err reading rtp")
 						return
 					}
 					rtc.rtpIn <- pkt
 				}
 			}()
 		}
-		logger.Debugf("got track %s", kind)
+		Logger.Debugf("got track %s", kind)
 	})
 
 	rtc.sub = sub
@@ -68,16 +70,16 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		return nil, err
 	}
 	dc.OnOpen(func() {
-		logger.Info("data channel opened...")
+		Logger.Info("data channel opened...")
 
 		for transcription := range params.transcriptionStream {
-			logger.Infof("got transcript %s", transcription.Text)
+			Logger.Infof("got transcript %s", transcription.Text)
 			data, err := json.Marshal(transcription)
 			if err != nil {
-				logger.Error(err, "error marshalling transcript")
+				Logger.Error(err, "error marshalling transcript")
 				continue
 			}
-			logger.Debugf("sending transcript %+v on data channel", transcription)
+			Logger.Debugf("sending transcript %+v on data channel", transcription)
 			dc.Send(data)
 		}
 	})
@@ -94,7 +96,7 @@ func (r *RTCConnection) OnTrickle(candidate webrtc.ICECandidateInit, target int)
 		return r.sub.AddIceCandidate(candidate)
 	default:
 		err := errors.New(fmt.Sprintf("unknown target %d for candidate", target))
-		logger.Error(err, "error OnTrickle")
+		Logger.Error(err, "error OnTrickle")
 		return err
 	}
 }
@@ -110,13 +112,13 @@ func (r *RTCConnection) SetAnswer(answer webrtc.SessionDescription) error {
 func (r *RTCConnection) OnOffer(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
 	var answer = webrtc.SessionDescription{}
 	if err := r.sub.Offer(offer); err != nil {
-		logger.Error(err, "error setting offer")
+		Logger.Error(err, "error setting offer")
 		return answer, err
 	}
 
 	answer, err := r.sub.Answer()
 	if err != nil {
-		logger.Error(err, "error getting answer")
+		Logger.Error(err, "error getting answer")
 		return answer, err
 	}
 	return answer, nil

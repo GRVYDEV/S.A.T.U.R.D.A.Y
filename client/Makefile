@@ -24,7 +24,7 @@ ifeq ($(wildcard $(MODELS_DIR)/$(MODEL_FILE_NAME)),)
 endif
 
 run: pre-reqs
-	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} PKG_CONFIG_PATH= go run .
+	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go run cmd/whisper.cpp/main.go
 
 debug: pre-reqs
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} PKG_CONFIG_PATH= go run . --debug=true

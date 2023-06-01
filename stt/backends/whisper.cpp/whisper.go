@@ -24,7 +24,7 @@ type WhisperModel struct {
 }
 
 // NewWhisperModel creates a new WhisperModel with the model spicified by modelPath
-func NewWhisperModel(modelPath string) (*WhisperModel, error) {
+func New(modelPath string) (*WhisperModel, error) {
 	ctx := whisper.Whisper_init(modelPath)
 	if ctx == nil {
 		return nil, errors.New("failed to initialize whisper")

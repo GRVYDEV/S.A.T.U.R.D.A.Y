@@ -22,7 +22,7 @@ type transcriptionPython struct {
 	Transcriptions []engine.TranscriptionSegment `json:"transcriptions"`
 }
 
-func NewFasterWhisperApi(url string) (*FasterWhisperApi, error) {
+func New(url string) (*FasterWhisperApi, error) {
 	if url == "" {
 		return nil, errors.New(fmt.Sprintf("invalid url for FasterWhisperApi %s", url))
 	}
