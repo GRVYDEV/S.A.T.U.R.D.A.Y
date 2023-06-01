@@ -144,7 +144,7 @@ func (e *Engine) runInference(endTimestamp uint32) (Transcription, error) {
 
 	Logger.Debugf("running whisper inference with %d window length", len(e.window))
 
-	transcript, err := e.transcriber.Transcibe(e.window)
+	transcript, err := e.transcriber.Transcribe(e.window)
 	transcript.From = e.lastHandledTimestamp
 	return transcript, err
 

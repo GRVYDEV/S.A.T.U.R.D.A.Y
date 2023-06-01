@@ -1,7 +1,7 @@
 package engine
 
 type Transcriber interface {
-	Transcibe(audioData []float32) (Transcription, error)
+	Transcribe(audioData []float32) (Transcription, error)
 }
 
 type TranscriptionSegment struct {

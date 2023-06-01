@@ -9,3 +9,7 @@ use ./whisper-api
 use ./speaker
 
 use ./log
+
+use ./stt/engine
+
+use ./stt/backends/whisper.cpp
