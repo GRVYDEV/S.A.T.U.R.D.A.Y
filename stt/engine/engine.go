@@ -12,8 +12,8 @@ import (
 const (
 	// This is determined by the hyperparameter configuration that whisper was trained on.
 	// See more here: https://github.com/ggerganov/whisper.cpp/issues/909
-	sampleRate   = 16000 // 16kHz
-	sampleRateMs = sampleRate / 1000
+	SampleRate   = 16000 // 16kHz
+	sampleRateMs = SampleRate / 1000
 	// This determines how much audio we will be passing to whisper inference.
 	// We will buffer up to (whisperSampleWindowMs - pcmSampleRateMs) of old audio and then add
 	// audioSampleRateMs of new audio onto the end of the buffer for inference
@@ -50,7 +50,7 @@ type Engine struct {
 	transcriber Transcriber
 }
 
-func NewEngine(params EngineParams) (*Engine, error) {
+func New(params EngineParams) (*Engine, error) {
 	if params.Transcriber == nil {
 		return nil, errors.New("you must supply a Transciber to create an engine")
 	}
@@ -62,6 +62,10 @@ func NewEngine(params EngineParams) (*Engine, error) {
 		onTranscriptionSegment: params.OnTranscriptionSegment,
 		transcriber:            params.Transcriber,
 	}, nil
+}
+
+func (e *Engine) OnTranscriptionSegment(fn func(TranscriptionSegment)) {
+	e.onTranscriptionSegment = fn
 }
 
 // endTimestamp is the latest packet timestamp + len of the audio in the packet
@@ -91,10 +95,7 @@ func (e *Engine) Write(pcm []float32, Timestamp uint32) {
 					if e.onTranscriptionSegment != nil {
 						e.onTranscriptionSegment(segment)
 					}
-					// FIXME this is horrible. We need to figure out how to fix the whisper segmenting logic
-					// maybe look into seeding the context
-					if segment.Text[0] != '(' && segment.Text[0] != '[' && segment.Text[0] != '.' {
-					}
+
 					// if this is the second to last one then update last handled timestamp and chop the window
 					if i == len(transcription.Transcriptions)-2 {
 						transcriptEnd := transcription.From + segment.EndTimestamp

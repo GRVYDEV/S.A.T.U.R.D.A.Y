@@ -13,3 +13,5 @@ use ./log
 use ./stt/engine
 
 use ./stt/backends/whisper.cpp
+
+use ./stt/backends/faster-whisper
