@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build .
+RUN go build -o client cmd/faster-whisper/main.go
 
 # Start a new stage from scratch
 FROM golang:1.20

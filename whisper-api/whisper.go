@@ -15,10 +15,6 @@ import (
 
 var debug = flag.Bool("debug", false, "print debug logs")
 
-var (
-	logger = logr.New()
-)
-
 type WhisperModel struct {
 	ctx    *whisper.Context
 	params whisper.Params

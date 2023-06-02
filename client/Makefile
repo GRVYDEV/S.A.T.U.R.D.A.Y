@@ -6,7 +6,7 @@ MODEL_FILE_NAME := ggml-$(MODEL_NAME).bin
 INCLUDE_PATH := $(WHISPER_DIR)
 LIBRARY_PATH := $(WHISPER_DIR)
 
-backend := whisper.cpp
+backend := wcpp
 
 whisper-cpp-pre-reqs:
 ifeq ($(wildcard $(WHISPER_DIR)/*),)
@@ -28,14 +28,14 @@ run-whisper-cpp: whisper-cpp-pre-reqs
 	@echo "running client with whisper.cpp backend..."
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go run cmd/whisper.cpp/main.go
 
-run-faster-whisper:
-	@echo "running client with faster-whisper backend..."
-	@go run cmd/faster-whisper/main.go
+run-http:
+	@echo "running client with http backend..."
+	@go run cmd/http/main.go
 
 ifeq ($(backend), wcpp)
 run: run-whisper-cpp
-else ifeq ($(backend), fwhisper)
-run: run-faster-whisper
+else ifeq ($(backend), http)
+run: run-http
 else
 run: run-whisper-cpp
 endif
