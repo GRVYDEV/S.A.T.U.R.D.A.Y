@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"S.A.T.U.R.D.A.Y/client"
-	fwhisper "S.A.T.U.R.D.A.Y/stt/backends/faster-whisper"
+	shttp "S.A.T.U.R.D.A.Y/stt/backends/http"
 	"S.A.T.U.R.D.A.Y/stt/engine"
 
 	logr "S.A.T.U.R.D.A.Y/log"
@@ -43,9 +43,9 @@ func main() {
 	}
 	transcriptionUrl := room + "/transcribe" // Replace with the appropriate API URL
 
-	fasterWhisper, err := fwhisper.New(transcriptionUrl)
+	httpApi, err := shttp.New(transcriptionUrl)
 	if err != nil {
-		logger.Fatal(err, "error creating whisper api")
+		logger.Fatal(err, "error creating http api")
 	}
 
 	transcriptionStream := make(chan engine.TranscriptionSegment, 100)
@@ -55,7 +55,7 @@ func main() {
 	}
 
 	engine, err := engine.New(engine.EngineParams{
-		Transcriber:            fasterWhisper,
+		Transcriber:            httpApi,
 		OnTranscriptionSegment: onTranscriptionSegment,
 	})
 

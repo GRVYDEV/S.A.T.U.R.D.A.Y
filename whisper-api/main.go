@@ -1,28 +1,25 @@
 package main
 
 import (
-	"log"
 	"time"
+
+	logr "S.A.T.U.R.D.A.Y/log"
+	whisper "S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
 
 	"github.com/gin-gonic/gin"
 )
 
-type TranscriptionSegment struct {
-	StartTimestamp int64  `json:"startTimestamp"`
-	EndTimestamp   int64  `json:"endTimestamp"`
-	Text           string `json:"text"`
-}
-
-type Transcription struct {
-	Transcriptions []TranscriptionSegment `json:"transcriptions"`
-}
+var (
+	logger = logr.New()
+)
 
 func main() {
-	router := gin.Default()
-	whisperEngine, err := NewWhisperModel()
+	whisperEngine, err := whisper.New("../models/ggml-base.en.bin")
 	if err != nil {
-		log.Fatalf("failed to create whisper engine %+v", err)
+		logger.Fatal(err, "error creating whisper model")
 	}
+
+	router := gin.Default()
 	router.POST("/transcribe", func(c *gin.Context) {
 		var transcriptionRequest []float32
 
@@ -32,7 +29,8 @@ func main() {
 		}
 
 		start := time.Now()
-		err, transcription := whisperEngine.Process(transcriptionRequest)
+		transcription, err := whisperEngine.Transcribe(transcriptionRequest)
+		logger.Error(err, "error running inference")
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -40,8 +38,8 @@ func main() {
 		end := time.Now()
 
 		elapsed := end.Sub(start)
-		log.Printf("Took: %v", elapsed)
-		log.Printf("%v", transcription)
+		logger.Infof("Took: %v", elapsed)
+		logger.Infof("%v", transcription)
 
 		c.JSON(200, transcription)
 	})
