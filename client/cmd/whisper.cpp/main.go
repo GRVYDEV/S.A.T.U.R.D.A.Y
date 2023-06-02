@@ -38,7 +38,7 @@ func main() {
 	url := url.URL{Scheme: "ws", Host: urlEnv, Path: "/ws"}
 
 	// FIXME read from env
-	whisperCpp, err := whisper.New("./models/ggml-base.en.bin")
+	whisperCpp, err := whisper.New("../models/ggml-base.en.bin")
 	if err != nil {
 		logger.Fatal(err, "error creating whisper model")
 	}
