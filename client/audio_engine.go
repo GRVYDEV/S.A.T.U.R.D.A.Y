@@ -1,14 +1,15 @@
-package main
+package client
 
 import (
 	"math"
 
+	"S.A.T.U.R.D.A.Y/stt/engine"
 	"github.com/pion/rtp"
 	"gopkg.in/hraban/opus.v2"
 )
 
 const (
-	sampleRate  = whisperSampleRate // found in whisper_engine.go (16000)
+	sampleRate  = engine.SampleRate // (16000)
 	channels    = 1                 // decode into 1 channel since that is what whisper.cpp wants
 	frameSizeMs = 20
 )
@@ -30,15 +31,11 @@ type AudioEngine struct {
 	buf []byte
 
 	firstTimeStamp *uint32
-	we             *WhisperEngine
+	engine         *engine.Engine
 }
 
-func NewAudioEngine(transcriptionStream chan TranscriptionSegment) (*AudioEngine, error) {
+func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
 	dec, err := opus.NewDecoder(sampleRate, channels)
-	if err != nil {
-		return nil, err
-	}
-	we, err := NewWhisperEngine(transcriptionStream)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +46,7 @@ func NewAudioEngine(transcriptionStream chan TranscriptionSegment) (*AudioEngine
 		pcm:    make([]float32, frameSize),
 		buf:    make([]byte, frameSize*2),
 		dec:    dec,
-		we:     we,
+		engine: engine,
 	}, nil
 }
 
@@ -62,7 +59,7 @@ func (a *AudioEngine) Out() <-chan *rtp.Packet {
 }
 
 func (a *AudioEngine) Start() {
-	logger.Info("Starting audio engine")
+	Logger.Info("Starting audio engine")
 	go a.decode()
 }
 
@@ -77,27 +74,16 @@ func (a *AudioEngine) decode() {
 	for {
 		pkt, ok := <-a.rtpIn
 		if !ok {
-			logger.Info("rtpIn channel closed...")
+			Logger.Info("rtpIn channel closed...")
 			return
 		}
-		// log.Printf("got pkt of size %d", len(pkt.Payload))
-		if pkt.SequenceNumber == 0 {
-			logger.Info("Resetting timestamp bc sequencenumber 0...")
-			a.firstTimeStamp = &pkt.Timestamp
-		}
 		if a.firstTimeStamp == nil {
-			logger.Info("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
+			Logger.Debug("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
 			a.firstTimeStamp = &pkt.Timestamp
 		}
 
 		if _, err := a.decodePacket(pkt); err != nil {
-			logger.Fatal(err, "error decoding opus packet")
-		} else {
-
-			// log.Printf("decoded %d bytes", n)
-			// if _, err = f.Write(a.buf[:n]); err != nil {
-			// 	log.Fatalf("error writing to file %+v", err)
-			// }
+			Logger.Error(err, "error decoding opus packet ")
 		}
 	}
 }
@@ -106,13 +92,13 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 	_, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm)
 	// we decode to float32 here since that is what whisper.cpp takes
 	if err != nil {
-		logger.Error(err, "error decoding fb packet")
+		Logger.Error(err, "error decoding fb packet")
 		return 0, err
 	} else {
 		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
 		lengthOfRecording := uint32(len(a.pcm) / (sampleRate / 1000))
 		timestampRecordingEnds := timestampMS + lengthOfRecording
-		a.we.Write(a.pcm, timestampRecordingEnds)
+		a.engine.Write(a.pcm, timestampRecordingEnds)
 		return convertToBytes(a.pcm, a.buf), nil
 	}
 }

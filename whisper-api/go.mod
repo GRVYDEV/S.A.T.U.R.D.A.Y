@@ -1,4 +1,4 @@
-module S.A.T.U.R.D.A.Y/client
+module S.A.T.U.R.D.A.Y/whisper-api
 
 go 1.20
 
@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/ggerganov/whisper.cpp/bindings/go v0.0.0-20230524181101-5e2b3407ef46 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.3 // indirect

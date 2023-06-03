@@ -2,3 +2,5 @@
 # moon
 .moon/cache
 .moon/docker
+*.bin
+*/__pycache__/*
