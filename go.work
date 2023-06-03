@@ -1,6 +1,17 @@
 go 1.20
 
 use ./rtc
+
 use ./client
+
+use ./whisper-api
+
 use ./speaker
+
 use ./log
+
+use ./stt/engine
+
+use ./stt/backends/whisper.cpp
+
+use ./stt/backends/http

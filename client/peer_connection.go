@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"os"
@@ -25,7 +25,7 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate)) PeerConn {
 	// Create a new RTCPeerConnection
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
-		logger.Fatal(err, "pc err")
+		Logger.Fatal(err, "pc err")
 	}
 
 	pc := PeerConn{
@@ -38,13 +38,13 @@ func NewPeerConn(onICECandidate func(candidate *webrtc.ICECandidate)) PeerConn {
 	peerConnection.OnICECandidate(onICECandidate)
 
 	peerConnection.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		logger.Infof("Peer Connection State has changed: %s\n", s.String())
+		Logger.Infof("Peer Connection State has changed: %s\n", s.String())
 
 		if s == webrtc.PeerConnectionStateFailed {
 			// Wait until PeerConnection has had no network activity for 30 seconds or another failure. It may be reconnected using an ICE Restart.
 			// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
 			// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
-			logger.Info("Peer Connection has gone to failed exiting")
+			Logger.Info("Peer Connection has gone to failed exiting")
 			os.Exit(0)
 		}
 	})
@@ -73,7 +73,7 @@ func (c PeerConn) Answer() (webrtc.SessionDescription, error) {
 	}
 
 	if err = c.flushCandidates(); err != nil {
-		logger.Error(err, "error flushing candidates in Answer")
+		Logger.Error(err, "error flushing candidates in Answer")
 	}
 
 	return answer, nil
@@ -85,7 +85,7 @@ func (c PeerConn) flushCandidates() error {
 
 	for _, candidate := range c.pendingCandidates {
 		if err := c.conn.AddICECandidate(candidate); err != nil {
-			logger.Errorf(err, "error adding ice candidate %+v", candidate)
+			Logger.Errorf(err, "error adding ice candidate %+v", candidate)
 			return err
 		}
 	}
@@ -108,7 +108,7 @@ func (c PeerConn) SetAnswer(answer webrtc.SessionDescription) error {
 	}
 
 	if err := c.flushCandidates(); err != nil {
-		logger.Error(err, "error flushing candidates in SetAnswer")
+		Logger.Error(err, "error flushing candidates in SetAnswer")
 	}
 	return nil
 }
