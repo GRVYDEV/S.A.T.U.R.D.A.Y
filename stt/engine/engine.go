@@ -31,7 +31,7 @@ const (
 var Logger = logr.New()
 
 type EngineParams struct {
-	OnTranscriptionSegment func(TranscriptionSegment)
+	OnTranscriptionSegment func(*Document)
 	Transcriber            Transcriber
 }
 
@@ -44,8 +44,11 @@ type Engine struct {
 	window               []float32
 	lastHandledTimestamp uint32
 
+	// document composer to handle incoming transcriptions
+	documentComposer DocumentComposer
+
 	// callback when we have a transcription segment
-	onTranscriptionSegment func(TranscriptionSegment)
+	onTranscriptionSegment func(*Document)
 
 	transcriber Transcriber
 }
@@ -61,10 +64,11 @@ func New(params EngineParams) (*Engine, error) {
 		lastHandledTimestamp:   0,
 		onTranscriptionSegment: params.OnTranscriptionSegment,
 		transcriber:            params.Transcriber,
+		documentComposer:       NewDocumentComposer(),
 	}, nil
 }
 
-func (e *Engine) OnTranscriptionSegment(fn func(TranscriptionSegment)) {
+func (e *Engine) OnTranscriptionSegment(fn func(*Document)) {
 	e.onTranscriptionSegment = fn
 }
 
@@ -83,33 +87,21 @@ func (e *Engine) Write(pcm []float32, Timestamp uint32) {
 		transcription, err := e.runInference(currentTime)
 
 		if err == nil {
-			Logger.Infof("Got %d segments start %d", len(transcription.Transcriptions), transcription.From)
-			// if there is more than one segment then send all except the last, slide the whisper window and update the timestamp
-			if len(transcription.Transcriptions) > 1 {
-				for i, segment := range transcription.Transcriptions {
-					// if this is the last one do nothing
-					if i == len(transcription.Transcriptions)-1 {
-						break
-					}
+			document, timestamp := e.documentComposer.NewTranscript(transcription)
 
-					if e.onTranscriptionSegment != nil {
-						e.onTranscriptionSegment(segment)
-					}
-
-					// if this is the second to last one then update last handled timestamp and chop the window
-					if i == len(transcription.Transcriptions)-2 {
-						transcriptEnd := transcription.From + segment.EndTimestamp
-						transcriptLen := transcriptEnd - e.lastHandledTimestamp
-						windowDelta := transcriptLen * sampleRateMs
-
-						e.window = e.window[windowDelta:]
-						e.lastHandledTimestamp = transcriptEnd
-
-						Logger.Infof("new endTimestamp: %d", e.lastHandledTimestamp)
-					}
-
-				}
+			if e.onTranscriptionSegment != nil {
+				e.onTranscriptionSegment(&document)
 			}
+
+			transcriptLen := timestamp - e.lastHandledTimestamp
+			if timestamp > e.lastHandledTimestamp {
+				windowDelta := transcriptLen * sampleRateMs
+				if windowDelta > uint32(len(e.window)) {
+					windowDelta = uint32(len(e.window))
+				}
+				e.window = e.window[windowDelta:]
+			}
+			e.lastHandledTimestamp = timestamp
 		} else {
 			Logger.Error(err, "error running inference")
 		}
@@ -128,7 +120,7 @@ func (e *Engine) runInference(endTimestamp uint32) (Transcription, error) {
 		// we need to drop the oldest samples and append the newest ones
 		e.window = append(e.window[pcmWinLen:], e.pcmWindow...)
 		// we also need to increment the last handled timestamp by the number of samples we slid the window
-		e.lastHandledTimestamp += uint32(pcmWinLen) * sampleRateMs
+		e.lastHandledTimestamp += uint32(pcmWinLen) / sampleRateMs
 		// empty the pcm window so we can add new samples
 		e.pcmWindow = e.pcmWindow[:0]
 	} else if whisperWinLen+pcmWinLen < windowMinSize {

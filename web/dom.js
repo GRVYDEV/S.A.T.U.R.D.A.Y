@@ -2,7 +2,7 @@ import { getDevices } from "./media.js";
 
 export function updateTranscriptions(text) {
   const div = document.getElementById("transcriptions");
-  div.innerHTML += text;
+  div.innerHTML = text;
 }
 
 export async function initializeDeviceSelect() {
