@@ -43,14 +43,11 @@ func main() {
 		logger.Fatal(err, "error creating whisper model")
 	}
 
-	transcriptionStream := make(chan engine.TranscriptionSegment, 100)
+	transcriptionStream := make(chan *engine.Document, 100)
 
-	onTranscriptionSegment := func(segment engine.TranscriptionSegment) {
-		// FIXME this is horrible. We need to figure out how to fix the whisper segmenting logic
-		// maybe look into seeding the context
-		if segment.Text[0] != '(' && segment.Text[0] != '[' && segment.Text[0] != '.' {
-			transcriptionStream <- segment
-		}
+	onTranscriptionSegment := func(segment *engine.Document) {
+		transcriptionStream <- segment
+
 	}
 
 	engine, err := engine.New(engine.EngineParams{
@@ -58,7 +55,11 @@ func main() {
 		OnTranscriptionSegment: onTranscriptionSegment,
 	})
 
-	sc, err := client.NewSaturdayClient(client.SaturdayConfig{Room: room, Url: url, SttEngine: engine})
+	sc, err := client.NewSaturdayClient(client.SaturdayConfig{
+		Room:                room,
+		Url:                 url,
+		SttEngine:           engine,
+		TranscriptionStream: transcriptionStream})
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}

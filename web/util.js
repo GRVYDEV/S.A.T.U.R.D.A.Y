@@ -15,5 +15,5 @@ export function decodeDatachannelMessage(data) {
   const arr = new Uint8Array(data);
   const json = JSON.parse(decoder.decode(arr));
   console.log("Got transcript:", json);
-  updateTranscriptions(json.text);
+  updateTranscriptions(json.TranscribedText + json.CurrentTranscription);
 }

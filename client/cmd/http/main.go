@@ -48,9 +48,10 @@ func main() {
 		logger.Fatal(err, "error creating http api")
 	}
 
-	transcriptionStream := make(chan engine.TranscriptionSegment, 100)
+	transcriptionStream := make(chan *engine.Document, 100)
 
-	onTranscriptionSegment := func(segment engine.TranscriptionSegment) {
+	onTranscriptionSegment := func(segment *engine.Document) {
+		logger.Debug(segment.NewText)
 		transcriptionStream <- segment
 	}
 
@@ -59,7 +60,11 @@ func main() {
 		OnTranscriptionSegment: onTranscriptionSegment,
 	})
 
-	sc, err := client.NewSaturdayClient(client.SaturdayConfig{Room: room, Url: url_scheme, SttEngine: engine})
+	sc, err := client.NewSaturdayClient(client.SaturdayConfig{
+		Room:                room,
+		Url:                 url_scheme,
+		SttEngine:           engine,
+		TranscriptionStream: transcriptionStream})
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}
