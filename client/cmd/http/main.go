@@ -39,9 +39,9 @@ func main() {
 
 	transcriptionService := os.Getenv("TRASCRIPTION_SERVICE")
 	if transcriptionService == "" {
-		transcriptionService = "http://localhost:8000"
+		transcriptionService = "http://localhost:8000/"
 	}
-	transcriptionUrl := room + "/transcribe" // Replace with the appropriate API URL
+	transcriptionUrl := transcriptionService + room + "/transcribe" // Replace with the appropriate API URL
 
 	httpApi, err := shttp.New(transcriptionUrl)
 	if err != nil {
