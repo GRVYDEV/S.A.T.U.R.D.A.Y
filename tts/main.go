@@ -8,9 +8,6 @@ import "C"
 
 import (
 	"fmt"
-	"log"
-	"path/filepath"
-	"unsafe"
 )
 
 type PyObject C.PyObject
@@ -38,20 +35,20 @@ func main() {
 	defer C.Py_Finalize()
 	C.Py_Initialize()
 
-	dir, err := filepath.Abs(filepath.Dir("./pyspeech/__init__.py"))
-	if err != nil {
-		log.Fatalf("error finding python file %+v", err)
-	}
+	// dir, err := filepath.Abs(filepath.Dir("./pyspeech/__init__.py"))
+	// if err != nil {
+	// 	log.Fatalf("error finding python file %+v", err)
+	// }
 
-	cinitModule := C.CString("import sys\nsys.path.append(\"" + dir + "\")")
-	C.PyRun_SimpleString(cinitModule)
-	C.free(unsafe.Pointer(cinitModule))
+	// cinitModule := C.CString("import sys\nsys.path.append(\"" + dir + "\")")
+	// C.PyRun_SimpleString(cinitModule)
+	// C.free(unsafe.Pointer(cinitModule))
 
-	cmodule := C.CString("speech")
-	obj := togo(C.PyImport_ImportModule(cmodule))
-	C.free(unsafe.Pointer(cmodule))
+	// cmodule := C.CString("speech")
+	// obj := togo(C.PyImport_ImportModule(cmodule))
+	// C.free(unsafe.Pointer(cmodule))
 
-	defer obj.DecRef()
+	// defer obj.DecRef()
 
 	fmt.Println(C.GoString(C.Py_GetVersion()))
 }

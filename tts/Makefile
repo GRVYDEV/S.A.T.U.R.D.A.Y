@@ -8,5 +8,11 @@ install:
 	@echo "installing deps..."
 	@pip install -r requirements.txt
 
-run:
+run-go:
 	@PKG_CONFIG_PATH=$(PYTHON_PKG) go run main.go
+
+run:
+	@uvicorn main:app
+
+dev:
+	@uvicorn main:app --reload
