@@ -1,3 +1,9 @@
+# Deps
+
+- mecab `brew install mecab`
+
+- espeak `brew install espeak`
+
 # Install steps
 
 - Get python version > 3.7 < 3.11 with dev headers
