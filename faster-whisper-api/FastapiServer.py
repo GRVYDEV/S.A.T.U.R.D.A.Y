@@ -29,7 +29,7 @@ def transform_segment(segment) -> dict:
     return transcription_segment
 
 
-@app.post('/transcribe')
+@app.post('/test/transcribe')
 def transcribe(transcription_request: List[float]) -> Transcription:
     # Perform transcription on the audio data
 
