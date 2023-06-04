@@ -9,6 +9,7 @@ import (
 	"time"
 
 	logr "S.A.T.U.R.D.A.Y/log"
+	"S.A.T.U.R.D.A.Y/stt/engine"
 	whisper "github.com/ggerganov/whisper.cpp/bindings/go"
 	"github.com/rs/zerolog"
 )
@@ -46,18 +47,18 @@ func NewWhisperModel() (*WhisperModel, error) {
 	return &WhisperModel{ctx: ctx, params: params}, nil
 }
 
-func (w *WhisperModel) Process(samples []float32) (error, Transcription) {
+func (w *WhisperModel) Process(samples []float32) (error, engine.Transcription) {
 	start := time.Now()
-	transcription := Transcription{}
+	transcription := engine.Transcription{}
 	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
 		return err, transcription
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
 		for i := 0; i < segments; i++ {
-			trasncriptionSegment := TranscriptionSegment{}
+			trasncriptionSegment := engine.TranscriptionSegment{}
 
-			trasncriptionSegment.StartTimestamp = w.ctx.Whisper_full_get_segment_t0(i) * 10
-			trasncriptionSegment.EndTimestamp = w.ctx.Whisper_full_get_segment_t1(i) * 10
+			trasncriptionSegment.StartTimestamp = uint32(w.ctx.Whisper_full_get_segment_t0(i) * 10)
+			trasncriptionSegment.EndTimestamp = uint32(w.ctx.Whisper_full_get_segment_t1(i) * 10)
 
 			trasncriptionSegment.Text = strings.TrimLeft(w.ctx.Whisper_full_get_segment_text(i), " ")
 
