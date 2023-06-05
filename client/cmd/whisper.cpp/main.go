@@ -59,7 +59,9 @@ func main() {
 		Room:                room,
 		Url:                 url,
 		SttEngine:           engine,
-		TranscriptionStream: transcriptionStream})
+		TranscriptionStream: transcriptionStream,
+	})
+  
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}

@@ -2,10 +2,13 @@ package client
 
 import (
 	"math"
+	"time"
 
+	"S.A.T.U.R.D.A.Y/client/internal"
 	"S.A.T.U.R.D.A.Y/stt/engine"
+
 	"github.com/pion/rtp"
-	"gopkg.in/hraban/opus.v2"
+	"github.com/pion/webrtc/v3/pkg/media"
 )
 
 const (
@@ -22,9 +25,10 @@ type AudioEngine struct {
 	// RTP Opus packets to be converted to PCM
 	rtpIn chan *rtp.Packet
 	// RTP Opus packets converted from PCM to be sent over WebRTC
-	rtpOut chan *rtp.Packet
+	mediaOut chan media.Sample
 
-	dec *opus.Decoder
+	dec *internal.OpusDecoder
+	enc *internal.OpusEncoder
 	// slice to hold raw pcm data during decoding
 	pcm []float32
 	// slice to hold binary encoded pcm data
@@ -35,42 +39,95 @@ type AudioEngine struct {
 }
 
 func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
-	dec, err := opus.NewDecoder(sampleRate, channels)
+	dec, err := internal.NewOpusDecoder(sampleRate, channels)
+	if err != nil {
+		return nil, err
+	}
+
+	// we use 2 channels for the output
+	enc, err := internal.NewOpusEncoder(2, frameSizeMs)
 	if err != nil {
 		return nil, err
 	}
 
 	return &AudioEngine{
-		rtpIn:  make(chan *rtp.Packet),
-		rtpOut: make(chan *rtp.Packet),
-		pcm:    make([]float32, frameSize),
-		buf:    make([]byte, frameSize*2),
-		dec:    dec,
-		engine: engine,
+		rtpIn:    make(chan *rtp.Packet),
+		mediaOut: make(chan media.Sample),
+		pcm:      make([]float32, frameSize),
+		buf:      make([]byte, frameSize*2),
+		dec:      dec,
+		enc:      enc,
+		engine:   engine,
 	}, nil
 }
 
-func (a *AudioEngine) In() chan<- *rtp.Packet {
+func (a *AudioEngine) RtpIn() chan<- *rtp.Packet {
 	return a.rtpIn
 }
 
-func (a *AudioEngine) Out() <-chan *rtp.Packet {
-	return a.rtpOut
+func (a *AudioEngine) MediaOut() <-chan media.Sample {
+	return a.mediaOut
 }
 
 func (a *AudioEngine) Start() {
 	Logger.Info("Starting audio engine")
 	go a.decode()
+
+	// Below is simply for testing the RTC audio sending
+	// go func() {
+	// 	data, err := os.ReadFile("./internal/audio.pcm")
+	// 	if err != nil {
+	// 		Logger.Error(err, "error opening audio file")
+	// 		return
+	// 	}
+
+	// 	pcm := internal.BinaryToFloat32(data)
+
+	// 	for {
+	// 		if err := a.Encode(pcm, 1, 22050); err != nil {
+	// 			Logger.Error(err, "error encoding and sending")
+	// 		}
+
+	// 		Logger.Info("done encoding")
+
+	// 		time.Sleep(time.Second * 10)
+	// 	}
+
+	// }()
+}
+
+// Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
+func (a *AudioEngine) Encode(pcm []float32, inputChannelCount, inputSampleRate int) error {
+	opusFrames, err := a.enc.Encode(pcm, inputChannelCount, inputSampleRate)
+	if err != nil {
+		Logger.Error(err, "error encoding pcm")
+	}
+
+	go a.sendMedia(opusFrames)
+
+	return nil
+}
+
+// sendMedia turns opus frames into media samples and sends them on the channel
+func (a *AudioEngine) sendMedia(frames []internal.OpusFrame) {
+	for _, f := range frames {
+		sample := convertOpusToSample(f)
+		a.mediaOut <- sample
+		// this is important to properly pace the samples
+		time.Sleep(time.Millisecond * 20)
+	}
+}
+
+func convertOpusToSample(frame internal.OpusFrame) media.Sample {
+	return media.Sample{
+		Data:               frame.Data,
+		PrevDroppedPackets: 0, // FIXME support dropping packets
+		Duration:           time.Millisecond * 20,
+	}
 }
 
 // decode reads over the in channel in a loop, decodes the RTP packets to raw PCM and sends the data on another channel
 func (a *AudioEngine) decode() {
-	// _, err := os.Create("audio.pcm")
-	// if err != nil {
-	// 	log.Printf("err creating file %+v", err)
-	// 	return
-	// }
-
 	for {
 		pkt, ok := <-a.rtpIn
 		if !ok {
@@ -89,7 +146,7 @@ func (a *AudioEngine) decode() {
 }
 
 func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
-	_, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm)
+	_, err := a.dec.Decode(pkt.Payload, a.pcm)
 	// we decode to float32 here since that is what whisper.cpp takes
 	if err != nil {
 		Logger.Error(err, "error decoding fb packet")

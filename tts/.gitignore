@@ -9,3 +9,5 @@ build
 htmlcov
 env
 audio.pcm
+
+fun/
