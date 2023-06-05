@@ -70,7 +70,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 			return nil, err
 		}
 
-		_, err = pub.conn.AddTransceiverFromTrack(audioTrack, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly})
+		_, err = rtc.pub.conn.AddTransceiverFromTrack(audioTrack, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly})
 		if err != nil {
 			Logger.Error(err, "error adding local audio transceiver")
 			return nil, err
@@ -87,7 +87,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		ordered := true
 		maxRetransmits := uint16(0)
 
-		dc, err := pub.conn.CreateDataChannel(
+		dc, err := rtc.pub.conn.CreateDataChannel(
 			"transcriptions",
 			&webrtc.DataChannelInit{
 				Ordered:        &ordered,
@@ -100,25 +100,22 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		dc.OnOpen(func() {
 			Logger.Info("data channel opened...")
 
-      for transcription := range params.transcriptionStream {
-          Logger.Debugf("Transcribed %s", transcription.TranscribedText)
-          Logger.Debugf("New text %s", transcription.NewText)
-          data, err := json.Marshal(transcription)
-          if err != nil {
-            Logger.Error(err, "error marshalling transcript")
-            continue
-          }
-          Logger.Debugf("sending transcript %+v on data channel", transcription)
-          dc.Send(data)
-        }
+			for transcription := range params.transcriptionStream {
+				Logger.Debugf("Transcribed %s", transcription.TranscribedText)
+				Logger.Debugf("New text %s", transcription.NewText)
+				data, err := json.Marshal(transcription)
+				if err != nil {
+					Logger.Error(err, "error marshalling transcript")
+					continue
+				}
+				Logger.Debugf("sending transcript %+v on data channel", transcription)
+				dc.Send(data)
+			}
 		})
 
 	} else {
 		Logger.Info("transcriptionStream not provided... transcription relay is disabled")
 	}
-
-	rtc.pub = pub
-
 
 	return rtc, nil
 }

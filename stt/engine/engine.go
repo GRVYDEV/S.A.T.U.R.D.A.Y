@@ -24,7 +24,7 @@ const (
 	windowMinSize = 2000 * sampleRateMs
 	// This determines how often we will try to run inference.
 	// We will buffer (pcmSampleRateMs * whisperSampleRate / 1000) samples and then run inference
-	pcmSampleRateMs = 500
+	pcmSampleRateMs = 7500
 	pcmWindowSize   = pcmSampleRateMs * sampleRateMs
 )
 
