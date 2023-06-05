@@ -84,7 +84,7 @@ func (o *OpusEncoder) Encode(pcm []float32, inputChannelCount, inputSampleRate i
 
 func (o *OpusEncoder) encodeToOpus(frame PcmFrame) (OpusFrame, error) {
 	opusFrame := OpusFrame{Index: frame.index}
-	data := make([]byte, 1920)
+	data := make([]byte, 1000)
 
 	n, err := o.enc.EncodeFloat32(frame.data, data)
 	if err != nil {
