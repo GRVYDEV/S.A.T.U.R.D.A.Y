@@ -3,9 +3,10 @@ package client
 import (
 	"math"
 
+	"S.A.T.U.R.D.A.Y/client/internal"
 	"S.A.T.U.R.D.A.Y/stt/engine"
+
 	"github.com/pion/rtp"
-	"gopkg.in/hraban/opus.v2"
 )
 
 const (
@@ -24,7 +25,8 @@ type AudioEngine struct {
 	// RTP Opus packets converted from PCM to be sent over WebRTC
 	rtpOut chan *rtp.Packet
 
-	dec *opus.Decoder
+	dec *internal.OpusDecoder
+	enc *internal.OpusEncoder
 	// slice to hold raw pcm data during decoding
 	pcm []float32
 	// slice to hold binary encoded pcm data
@@ -35,7 +37,13 @@ type AudioEngine struct {
 }
 
 func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
-	dec, err := opus.NewDecoder(sampleRate, channels)
+	dec, err := internal.NewOpusDecoder(sampleRate, channels)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO make sample rate configurable
+	enc, err := internal.NewOpusEncoder(1, 20)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +54,7 @@ func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
 		pcm:    make([]float32, frameSize),
 		buf:    make([]byte, frameSize*2),
 		dec:    dec,
+		enc:    enc,
 		engine: engine,
 	}, nil
 }
@@ -61,6 +70,11 @@ func (a *AudioEngine) Out() <-chan *rtp.Packet {
 func (a *AudioEngine) Start() {
 	Logger.Info("Starting audio engine")
 	go a.decode()
+}
+
+// Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
+func (a *AudioEngine) Encode(pcm []float32, inputSampleRate int) ([]internal.OpusFrame, error) {
+	return a.enc.Encode(pcm, inputSampleRate)
 }
 
 // decode reads over the in channel in a loop, decodes the RTP packets to raw PCM and sends the data on another channel
@@ -89,7 +103,7 @@ func (a *AudioEngine) decode() {
 }
 
 func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
-	_, err := a.dec.DecodeFloat32(pkt.Payload, a.pcm)
+	_, err := a.dec.Decode(pkt.Payload, a.pcm)
 	// we decode to float32 here since that is what whisper.cpp takes
 	if err != nil {
 		Logger.Error(err, "error decoding fb packet")
