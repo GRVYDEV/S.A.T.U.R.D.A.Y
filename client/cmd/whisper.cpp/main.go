@@ -58,7 +58,13 @@ func main() {
 		OnTranscriptionSegment: onTranscriptionSegment,
 	})
 
-	sc, err := client.NewSaturdayClient(client.SaturdayConfig{Room: room, Url: url, SttEngine: engine})
+	sc, err := client.NewSaturdayClient(client.SaturdayConfig{
+		Room:                room,
+		Url:                 url,
+		SttEngine:           engine,
+		TranscriptionStream: transcriptionStream,
+	})
+
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}
