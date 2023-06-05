@@ -130,7 +130,6 @@ func (r *RTCConnection) processOutgoingMedia() {
 		return
 	}
 	for sample := range r.mediaIn {
-		Logger.Info("writing sample")
 		if err := r.audioTrack.WriteSample(sample); err != nil {
 			Logger.Error(err, "error writing sample")
 		}

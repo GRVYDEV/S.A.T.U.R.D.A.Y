@@ -1,6 +1,9 @@
 package internal
 
 import (
+	"errors"
+	"fmt"
+
 	logr "S.A.T.U.R.D.A.Y/log"
 
 	"gopkg.in/hraban/opus.v2"
@@ -30,6 +33,9 @@ type OpusEncoder struct {
 var Logger = logr.New()
 
 func NewOpusEncoder(channels, frameSizeMs int) (*OpusEncoder, error) {
+	if channels != 1 && channels != 2 {
+		return nil, errors.New(fmt.Sprintf("invalid channel count expected 1 or 2 got %d", channels))
+	}
 	enc, err := opus.NewEncoder(opusSampleRate, channels, opus.AppRestrictedLowdelay)
 	if err != nil {
 		return nil, err
@@ -43,7 +49,16 @@ func NewOpusEncoder(channels, frameSizeMs int) (*OpusEncoder, error) {
 }
 
 // Encode will resample and encode the provided pcm audio to 48khz Opus
-func (o *OpusEncoder) Encode(pcm []float32, inputSampleRate int) ([]OpusFrame, error) {
+func (o *OpusEncoder) Encode(pcm []float32, inputChannelCount, inputSampleRate int) ([]OpusFrame, error) {
+	if inputChannelCount != 1 && inputChannelCount != 2 {
+		return []OpusFrame{}, errors.New(fmt.Sprintf("invalid inputChannelCount expected 1 or 2 got %d", inputChannelCount))
+	}
+	if inputChannelCount == 2 && o.channels == 1 {
+		return []OpusFrame{}, errors.New("cannot currently downsample channels consider encoding to 2 channel")
+	}
+	if inputChannelCount == 1 && o.channels == 2 {
+		pcm = ConvertToDualChannel(pcm)
+	}
 	if inputSampleRate != opusSampleRate {
 		pcm = Resample(pcm, inputSampleRate, opusSampleRate)
 	}

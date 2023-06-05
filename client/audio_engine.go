@@ -2,6 +2,7 @@ package client
 
 import (
 	"math"
+	"os"
 	"time"
 
 	"S.A.T.U.R.D.A.Y/client/internal"
@@ -74,33 +75,31 @@ func (a *AudioEngine) Start() {
 	go a.decode()
 
 	// Below is simply for testing the RTC audio sending
-	// go func() {
-	// 	data, err := os.ReadFile("./internal/audio.pcm")
-	// 	if err != nil {
-	// 		Logger.Error(err, "error opening audio file")
-	// 		return
-	// 	}
+	go func() {
+		data, err := os.ReadFile("./internal/audio.pcm")
+		if err != nil {
+			Logger.Error(err, "error opening audio file")
+			return
+		}
 
-	// 	pcm := internal.BinaryToFloat32(data)
+		pcm := internal.BinaryToFloat32(data)
 
-	// 	for {
-	// 		if err := a.Encode(pcm, 22050); err != nil {
-	// 			Logger.Error(err, "error encoding and sending")
-	// 		}
+		for {
+			if err := a.Encode(pcm, 1, 22050); err != nil {
+				Logger.Error(err, "error encoding and sending")
+			}
 
-	// 		Logger.Info("done encoding")
+			Logger.Info("done encoding")
 
-	// 		time.Sleep(time.Second * 10)
-	// 	}
+			time.Sleep(time.Second * 10)
+		}
 
-	// }()
+	}()
 }
 
 // Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
-func (a *AudioEngine) Encode(pcm []float32, inputSampleRate int) error {
-	// convert the single channel pcm to dual channel
-	pcm = internal.ConvertToDualChannel(pcm)
-	opusFrames, err := a.enc.Encode(pcm, inputSampleRate)
+func (a *AudioEngine) Encode(pcm []float32, inputChannelCount, inputSampleRate int) error {
+	opusFrames, err := a.enc.Encode(pcm, inputChannelCount, inputSampleRate)
 	if err != nil {
 		Logger.Error(err, "error encoding pcm")
 	}
