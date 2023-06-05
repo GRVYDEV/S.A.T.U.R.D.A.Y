@@ -25,7 +25,7 @@ type RTCConnection struct {
 type RTCConnectionParams struct {
 	trickleFn           func(*webrtc.ICECandidate, int) error
 	rtpChan             chan<- *rtp.Packet
-	transcriptionStream <-chan engine.TranscriptionSegment
+	transcriptionStream <-chan engine.Document
 	mediaIn             <-chan media.Sample
 }
 
@@ -36,10 +36,10 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		mediaIn: params.mediaIn,
 	}
 
-	sub := NewPeerConn(func(candidate *webrtc.ICECandidate) {
+	rtc.sub = NewPeerConn(func(candidate *webrtc.ICECandidate) {
 		params.trickleFn(candidate, 1)
 	})
-	sub.conn.OnTrack(func(t *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
+	rtc.sub.conn.OnTrack(func(t *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
 		kind := "unknown kind"
 		if t.Kind() == webrtc.RTPCodecTypeVideo {
 			kind = "video"
@@ -59,9 +59,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		Logger.Debugf("got track %s", kind)
 	})
 
-	rtc.sub = sub
-
-	pub := NewPeerConn(func(candidate *webrtc.ICECandidate) {
+	rtc.pub = NewPeerConn(func(candidate *webrtc.ICECandidate) {
 		params.trickleFn(candidate, 0)
 	})
 
@@ -72,7 +70,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 			return nil, err
 		}
 
-		_, err = pub.conn.AddTransceiverFromTrack(audioTrack, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly})
+		_, err = rtc.pub.conn.AddTransceiverFromTrack(audioTrack, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly})
 		if err != nil {
 			Logger.Error(err, "error adding local audio transceiver")
 			return nil, err
@@ -89,7 +87,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		ordered := true
 		maxRetransmits := uint16(0)
 
-		dc, err := pub.conn.CreateDataChannel(
+		dc, err := rtc.pub.conn.CreateDataChannel(
 			"transcriptions",
 			&webrtc.DataChannelInit{
 				Ordered:        &ordered,
@@ -103,7 +101,8 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 			Logger.Info("data channel opened...")
 
 			for transcription := range params.transcriptionStream {
-				Logger.Infof("got transcript %s", transcription.Text)
+				Logger.Debugf("Transcribed %s", transcription.TranscribedText)
+				Logger.Debugf("New text %s", transcription.NewText)
 				data, err := json.Marshal(transcription)
 				if err != nil {
 					Logger.Error(err, "error marshalling transcript")
@@ -117,8 +116,6 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 	} else {
 		Logger.Info("transcriptionStream not provided... transcription relay is disabled")
 	}
-
-	rtc.pub = pub
 
 	return rtc, nil
 }
