@@ -42,6 +42,7 @@ func NewOpusEncoder(channels, frameSizeMs int) (*OpusEncoder, error) {
 	}, nil
 }
 
+// Encode will resample and encode the provided pcm audio to 48khz Opus
 func (o *OpusEncoder) Encode(pcm []float32, inputSampleRate int) ([]OpusFrame, error) {
 	if inputSampleRate != opusSampleRate {
 		pcm = Resample(pcm, inputSampleRate, opusSampleRate)
@@ -56,7 +57,6 @@ func (o *OpusEncoder) Encode(pcm []float32, inputSampleRate int) ([]OpusFrame, e
 			Logger.Error(err, "error encoding opus frame")
 			return opusFrames, err
 		}
-		Logger.Info("encoded frame")
 
 		opusFrames = append(opusFrames, opusFrame)
 	}
@@ -83,9 +83,10 @@ func (o *OpusEncoder) encodeToOpus(frame PcmFrame) (OpusFrame, error) {
 	return opusFrame, nil
 }
 
-func (o *OpusEncoder) chunkPcm(pcm []float32, inputSampleRate int) []PcmFrame {
+// chunkPcm will split the provided pcm audio into properly sized frames
+func (o *OpusEncoder) chunkPcm(pcm []float32, sampleRate int) []PcmFrame {
 	// the amount of samples that fit into a frame
-	outputFrameSize := o.channels * o.frameSizeMs * inputSampleRate / 1000
+	outputFrameSize := o.channels * o.frameSizeMs * sampleRate / 1000
 	// TODO make sure this rounds up
 	totalFrames := len(pcm) / outputFrameSize
 
@@ -96,7 +97,7 @@ func (o *OpusEncoder) chunkPcm(pcm []float32, inputSampleRate int) []PcmFrame {
 		pcmLen := len(pcm)
 		// we have at least a full frame left
 		if pcmLen > outputFrameSize {
-			Logger.Info("Got a full frame")
+			Logger.Debug("Got a full frame")
 			frames = append(frames, PcmFrame{index: idx, data: pcm[:outputFrameSize]})
 			// chop frame off of input
 			pcm = pcm[outputFrameSize:]
@@ -106,14 +107,14 @@ func (o *OpusEncoder) chunkPcm(pcm []float32, inputSampleRate int) []PcmFrame {
 			sampleDelta := outputFrameSize - pcmLen
 			silence := make([]float32, sampleDelta)
 
-			Logger.Infof("Got a partial frame len %d padding with %d silence samples", pcmLen, len(silence))
+			Logger.Debugf("Got a partial frame len %d padding with %d silence samples", pcmLen, len(silence))
 
 			frames = append(frames, PcmFrame{index: idx, data: append(pcm, silence...)})
 			break
 		}
 	}
 
-	Logger.Infof("got %d frames", len(frames))
+	Logger.Debugf("got %d frames", len(frames))
 
 	return frames
 }
