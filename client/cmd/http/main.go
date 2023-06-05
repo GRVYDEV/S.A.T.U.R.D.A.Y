@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"S.A.T.U.R.D.A.Y/client"
+	logr "S.A.T.U.R.D.A.Y/log"
 	shttp "S.A.T.U.R.D.A.Y/stt/backends/http"
 	"S.A.T.U.R.D.A.Y/stt/engine"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	"github.com/rs/zerolog"
+	"golang.org/x/exp/slog"
 )
 
 var debug = flag.Bool("debug", false, "print debug logs")
@@ -22,7 +22,7 @@ var (
 func main() {
 	flag.Parse()
 	if !*debug {
-		logr.SetGlobalOptions(logr.GlobalConfig{V: int(zerolog.DebugLevel)})
+		logr.SetLevel(slog.LevelDebug)
 	}
 
 	url_env := os.Getenv("URL")

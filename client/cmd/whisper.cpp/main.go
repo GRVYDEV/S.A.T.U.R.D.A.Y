@@ -9,8 +9,7 @@ import (
 	logr "S.A.T.U.R.D.A.Y/log"
 	whisper "S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
 	"S.A.T.U.R.D.A.Y/stt/engine"
-
-	"github.com/rs/zerolog"
+	"golang.org/x/exp/slog"
 )
 
 var debug = flag.Bool("debug", false, "print debug logs")
@@ -22,7 +21,7 @@ var (
 func main() {
 	flag.Parse()
 	if !*debug {
-		logr.SetGlobalOptions(logr.GlobalConfig{V: int(zerolog.DebugLevel)})
+		logr.SetLevel(slog.LevelDebug)
 	}
 
 	urlEnv := os.Getenv("URL")
