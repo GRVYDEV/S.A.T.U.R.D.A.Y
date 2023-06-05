@@ -47,8 +47,9 @@ func NewSaturdayClient(config SaturdayConfig) (*SaturdayClient, error) {
 		trickleFn: func(candidate *webrtc.ICECandidate, target int) error {
 			return ws.SendTrickle(candidate, target)
 		},
-		rtpChan:             ae.In(),
+		rtpChan:             ae.RtpIn(),
 		transcriptionStream: config.TranscriptionStream,
+		mediaIn:             ae.MediaOut(),
 	})
 	if err != nil {
 		return nil, err
