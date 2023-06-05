@@ -173,8 +173,8 @@ func TestHavingNoTwoSegementsWithinOneWindow(t *testing.T) {
 			},
 		},
 	})
-	if document.TranscribedText != "Hellothis is a test." {
-		t.Errorf("Expected document.TranscribedText to be 'this is a test.', got %s", document.TranscribedText)
+	if document.TranscribedText != "Hello this is a test." {
+		t.Errorf("Expected document.TranscribedText to be 'Hello this is a test.', got %s", document.TranscribedText)
 	}
 	if document.CurrentTranscription != "How is your day?" {
 		t.Errorf("Expected document text to be 'How is your day?', got %s", document.CurrentTranscription)
