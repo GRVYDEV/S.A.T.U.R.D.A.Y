@@ -2,25 +2,9 @@ package internal
 
 import (
 	"encoding/binary"
-	"math"
 	"os"
 	"testing"
 )
-
-func binaryToFloat32(data []byte) []float32 {
-	floats := make([]float32, 0, len(data)/4)
-	for {
-		if len(data) == 0 {
-			break
-		}
-
-		u := binary.LittleEndian.Uint32(data[:4])
-		f := math.Float32frombits(u)
-		floats = append(floats, f)
-		data = data[4:]
-	}
-	return floats
-}
 
 func TestEncDec(t *testing.T) {
 	data, err := os.ReadFile("./audio.pcm")
@@ -28,10 +12,12 @@ func TestEncDec(t *testing.T) {
 		t.Fatalf("error reading file %+v", err)
 	}
 
-	floats := binaryToFloat32(data)
+	floats := BinaryToFloat32(data)
 
-	// 1 channel 20ms framesize
-	enc, err := NewOpusEncoder(1, 20)
+	floats = ConvertToDualChannel(floats)
+
+	// 2 channel 20ms framesize
+	enc, err := NewOpusEncoder(2, 20)
 	if err != nil {
 		t.Fatalf("error creating opus enc %+v", err)
 	}
@@ -52,15 +38,15 @@ func TestEncDec(t *testing.T) {
 
 	rawOut := make([]float32, 0, len(opusFrames)*frameSize)
 
-	for _, frame := range opusFrames {
+	for i, frame := range opusFrames {
 		buf := make([]float32, frameSize)
-		n, err := dec.Decode(frame.data, buf)
+		n, err := dec.Decode(frame.Data, buf)
 		if err != nil {
 			t.Fatalf("error decoding opus frame %+v", err)
 		}
 
 		if n != frameSize {
-			t.Fatalf("WEIRD FRAME SIZE got: %d expected: %d", n, frameSize)
+			t.Fatalf("WEIRD FRAME SIZE at %d got: %d expected: %d", i, n, frameSize)
 		}
 
 		rawOut = append(rawOut, buf...)
