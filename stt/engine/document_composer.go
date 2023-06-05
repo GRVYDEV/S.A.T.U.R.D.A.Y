@@ -44,7 +44,6 @@ func (dc *DocumentComposer) ComposeDocument() (Document, uint32) {
 
 			if i == len(choosenTranscription.Transcriptions)-1 {
 				if len(transcriptions) == 0 {
-
 					if flippiSegment != "" {
 						flippiSegment += " "
 					}
@@ -52,7 +51,9 @@ func (dc *DocumentComposer) ComposeDocument() (Document, uint32) {
 					break
 				}
 			}
-
+			if document.NewText != "" {
+				document.NewText += " "
+			}
 			document.NewText += segment.Text
 			dc.finishedTextTimeStamp = choosenTranscription.From + segment.EndTimestamp
 
@@ -62,6 +63,9 @@ func (dc *DocumentComposer) ComposeDocument() (Document, uint32) {
 	}
 
 	dc.finishedText += document.NewText
+	if document.TranscribedText != "" {
+		document.TranscribedText += " "
+	}
 	document.TranscribedText = dc.finishedText
 	document.CurrentTranscription = flippiSegment
 	dc.DeleteSegmentsContaining(dc.finishedTextTimeStamp)
