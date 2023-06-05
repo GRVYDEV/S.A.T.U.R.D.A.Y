@@ -16,8 +16,8 @@ type PcmFrame struct {
 
 // OpusFrame contains and encoded opus frame
 type OpusFrame struct {
-	data  []byte
-	index int
+	Data  []byte
+	Index int
 }
 
 type OpusEncoder struct {
@@ -68,17 +68,15 @@ func (o *OpusEncoder) Encode(pcm []float32, inputSampleRate int) ([]OpusFrame, e
 }
 
 func (o *OpusEncoder) encodeToOpus(frame PcmFrame) (OpusFrame, error) {
-	opusFrame := OpusFrame{index: frame.index}
-	data := make([]byte, 1000)
-
-	Logger.Infof("encoding pcm size %d", len(frame.data))
+	opusFrame := OpusFrame{Index: frame.index}
+	data := make([]byte, 1920)
 
 	n, err := o.enc.EncodeFloat32(frame.data, data)
 	if err != nil {
 		Logger.Errorf(err, "error encoding frame %+v", err)
 		return opusFrame, err
 	}
-	opusFrame.data = data[:n]
+	opusFrame.Data = data[:n]
 
 	return opusFrame, nil
 }
@@ -93,7 +91,7 @@ func (o *OpusEncoder) chunkPcm(pcm []float32, sampleRate int) []PcmFrame {
 	frames := make([]PcmFrame, 0, totalFrames)
 
 	idx := 0
-	for idx < totalFrames {
+	for idx <= totalFrames {
 		pcmLen := len(pcm)
 		// we have at least a full frame left
 		if pcmLen > outputFrameSize {
