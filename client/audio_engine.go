@@ -42,8 +42,7 @@ func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
 		return nil, err
 	}
 
-	// TODO make sample rate configurable
-	enc, err := internal.NewOpusEncoder(1, 20)
+	enc, err := internal.NewOpusEncoder(channels, frameSizeMs)
 	if err != nil {
 		return nil, err
 	}
