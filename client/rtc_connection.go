@@ -25,7 +25,7 @@ type RTCConnection struct {
 type RTCConnectionParams struct {
 	trickleFn           func(*webrtc.ICECandidate, int) error
 	rtpChan             chan<- *rtp.Packet
-	transcriptionStream <-chan *engine.Document
+	transcriptionStream <-chan engine.Document
 	mediaIn             <-chan media.Sample
 }
 

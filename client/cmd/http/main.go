@@ -48,16 +48,16 @@ func main() {
 		logger.Fatal(err, "error creating http api")
 	}
 
-	transcriptionStream := make(chan *engine.Document, 100)
+	transcriptionStream := make(chan engine.Document, 100)
 
-	onTranscriptionSegment := func(segment *engine.Document) {
+	onDocumentUpdate := func(segment engine.Document) {
 		logger.Debug(segment.NewText)
 		transcriptionStream <- segment
 	}
 
 	engine, err := engine.New(engine.EngineParams{
-		Transcriber:            httpApi,
-		OnTranscriptionSegment: onTranscriptionSegment,
+		Transcriber:      httpApi,
+		OnDocumentUpdate: onDocumentUpdate,
 	})
 
 	sc, err := client.NewSaturdayClient(client.SaturdayConfig{

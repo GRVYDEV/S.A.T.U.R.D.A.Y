@@ -12,8 +12,11 @@ type DocumentComposer struct {
 	finishedTextTimeStamp uint32
 }
 
-func NewDocumentComposer() DocumentComposer {
-	documentComposer := DocumentComposer{}
+func NewDocumentComposer() *DocumentComposer {
+	documentComposer := &DocumentComposer{
+		// TODO maybe set max size?
+		transcriptions: make([]*Transcription, 0),
+	}
 
 	return documentComposer
 }

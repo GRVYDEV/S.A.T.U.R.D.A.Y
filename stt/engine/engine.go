@@ -31,8 +31,9 @@ const (
 var Logger = logr.New()
 
 type EngineParams struct {
-	OnTranscriptionSegment func(*Document)
-	Transcriber            Transcriber
+	OnDocumentUpdate func(Document)
+	Transcriber      Transcriber
+	DocumentComposer *DocumentComposer
 }
 
 type Engine struct {
@@ -45,10 +46,10 @@ type Engine struct {
 	lastHandledTimestamp uint32
 
 	// document composer to handle incoming transcriptions
-	documentComposer DocumentComposer
+	documentComposer *DocumentComposer
 
-	// callback when we have a transcription segment
-	onTranscriptionSegment func(*Document)
+	// callback when we have a document update
+	onDocumentUpdate func(Document)
 
 	transcriber Transcriber
 }
@@ -58,18 +59,22 @@ func New(params EngineParams) (*Engine, error) {
 		return nil, errors.New("you must supply a Transciber to create an engine")
 	}
 
+	if params.DocumentComposer == nil {
+		params.DocumentComposer = NewDocumentComposer()
+	}
+
 	return &Engine{
-		window:                 make([]float32, 0, windowSize),
-		pcmWindow:              make([]float32, 0, pcmWindowSize),
-		lastHandledTimestamp:   0,
-		onTranscriptionSegment: params.OnTranscriptionSegment,
-		transcriber:            params.Transcriber,
-		documentComposer:       NewDocumentComposer(),
+		window:               make([]float32, 0, windowSize),
+		pcmWindow:            make([]float32, 0, pcmWindowSize),
+		lastHandledTimestamp: 0,
+		onDocumentUpdate:     params.OnDocumentUpdate,
+		transcriber:          params.Transcriber,
+		documentComposer:     NewDocumentComposer(),
 	}, nil
 }
 
-func (e *Engine) OnTranscriptionSegment(fn func(*Document)) {
-	e.onTranscriptionSegment = fn
+func (e *Engine) OnDocumentUpdate(fn func(Document)) {
+	e.onDocumentUpdate = fn
 }
 
 // endTimestamp is the latest packet timestamp + len of the audio in the packet
@@ -89,8 +94,8 @@ func (e *Engine) Write(pcm []float32, Timestamp uint32) {
 		if err == nil {
 			document, timestamp := e.documentComposer.NewTranscript(transcription)
 
-			if e.onTranscriptionSegment != nil {
-				e.onTranscriptionSegment(&document)
+			if e.onDocumentUpdate != nil {
+				e.onDocumentUpdate(document)
 			}
 
 			transcriptLen := timestamp - e.lastHandledTimestamp
