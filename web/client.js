@@ -53,6 +53,11 @@ export class Client {
 
       this.sub.ontrack = (e) => {
         console.log("houston we have a track", e);
+        if (e.track.kind === "audio") {
+          const audioEl = document.getElementById("saturday-audio");
+          audioEl.srcObject = e.streams[0];
+          console.log(e.streams[0].getAudioTracks());
+        }
       };
       this.sub.ondatachannel = (e) => {
         const { channel } = e;
