@@ -3,13 +3,15 @@ version: "3.8"
 services:
   web_server:
     build:
-      dockerfile: rtc.dockerfile
+      context: ./rtc
+      dockerfile: Dockerfile
     ports:
       - "8088:8088"
 
   audio_client_parser:
     build:
-      dockerfile: client.dockerfile
+      context: ./client
+      dockerfile: Dockerfile
     environment:
       URL: web_server:8088
       ROOM: test
@@ -17,5 +19,5 @@ services:
 
   trascription_service:
     build:
-      context: ./faster-whisper-api
+      context: ./stt/servers/faster-whisper-api
       dockerfile: Dockerfile

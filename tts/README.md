@@ -1,21 +1,16 @@
-# Deps
+# TTS
 
-- mecab `brew install mecab`
+Tools for generating speech from text
 
-- espeak `brew install espeak`
+## /engine
 
-# Install steps
+A go interface that allows for programatically generating audio from text
 
-- Get python version > 3.7 < 3.11 with dev headers
+## /backends
 
-- ensure `python-config --prefix` command works
+A colletion of go backends that conform the the engine.Synthesizer interface used to create audio from text with different inference mechanisms. PRs more than welcome for more backends :)
+Backends are what actually does the text -> audio inference
 
-- (optional) create a virtual env
+## /servers
 
-- run `pip install -r requirements.txt`
-
-- run `make run`
-
-# Playing the audio file
-
-The audio file generated is a float32 little endian binary pcm file with a sample rate of 22050. You can play it back with the command `❯ ffplay -f f32le -ar 22050 audio.pcm`
+A collection of servers that can be used with various backends

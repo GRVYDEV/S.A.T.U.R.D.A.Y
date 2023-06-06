@@ -1,7 +1,0 @@
-language: "go"
-
-tasks:
-  run:
-    command: "go run main.go"
-  tidy:
-    command: "go mod tidy && cd internal/ws && go mod tidy"
