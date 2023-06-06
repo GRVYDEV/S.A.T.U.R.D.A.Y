@@ -5,6 +5,7 @@ use (
 	./client
 	./whisper-api
 	./tts
+    ./tts/engine
 	./stt/engine
 	./stt/backends/whisper.cpp
 	./stt/backends/http
