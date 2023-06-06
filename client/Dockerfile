@@ -6,19 +6,17 @@ RUN apt-get install pkg-config libopus-dev libopusfile-dev -y
 WORKDIR /app
 
 # Copy everything from the current directory to the PWD (Present Working Directory) inside the container
-COPY ../log/. ./log/.
-COPY ../stt/. ./stt/.
-COPY ../tts/backends/. ./tts/backends/.
-COPY ../tts/engine/. ./tts/engine/.
-COPY ../client/. ./client/.
-COPY ../rtc/. ./rtc/.
-COPY ../go.work .
+COPY ./log/. ./log/.
+COPY ./stt/. ./stt/.
+COPY ./tts/backends/. ./tts/backends/.
+COPY ./tts/engine/. ./tts/engine/.
+COPY ./client/. ./client/.
+COPY ./rtc/. ./rtc/.
+COPY ./util/. ./util/.
+COPY ./go.work .
+
 
 WORKDIR /app/client
-
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-RUN go mod download
-
 
 # Build the application
 RUN go build -o client cmd/http/main.go
