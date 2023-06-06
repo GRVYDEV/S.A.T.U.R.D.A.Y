@@ -3,21 +3,31 @@ version: "3.8"
 services:
   web_server:
     build:
-      context: ./rtc
-      dockerfile: Dockerfile
+      dockerfile: ./rtc/Dockerfile
     ports:
       - "8088:8088"
 
   audio_client_parser:
+    restart: "on-failure"
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      dockerfile: ./client/Dockerfile
+    depends_on:
+      - web_server
     environment:
       URL: web_server:8088
       ROOM: test
       TRASCRIPTION_SERVICE: http://trascription_service:8000/
 
   trascription_service:
+    restart: "on-failure"
     build:
-      context: ./stt/servers/faster-whisper-api
-      dockerfile: Dockerfile
+      dockerfile: ./stt/servers/faster-whisper-api/Dockerfile
+    depends_on:
+      - web_server
+
+  voice_service:
+    restart: "on-failure"
+    build:
+      dockerfile: ./tts/servers/coqui-tts/Dockerfile
+    depends_on:
+      - web_server

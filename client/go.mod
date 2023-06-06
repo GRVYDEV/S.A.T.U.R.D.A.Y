@@ -3,6 +3,13 @@ module github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client
 go 1.20
 
 require (
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/http v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine v0.0.0-20230606054542-a47e8e4100d8
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util v0.0.0-20230606054542-a47e8e4100d8
 	github.com/gorilla/websocket v1.5.0
 	github.com/pion/rtp v1.7.7
 	github.com/pion/webrtc/v3 v3.1.25
@@ -11,6 +18,7 @@ require (
 )
 
 require (
+	github.com/ggerganov/whisper.cpp/bindings/go v0.0.0-20230524181101-5e2b3407ef46 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.3 // indirect
@@ -27,7 +35,6 @@ require (
 	github.com/pion/transport v0.13.0 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.1.0 // indirect

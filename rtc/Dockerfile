@@ -2,10 +2,10 @@
 FROM golang:latest as builder
 
 
-# Copy everything from the current directory to the PWD (Present Working Directory) inside the container
-COPY . /app/rtc/.
-
 WORKDIR /app/rtc
+# Copy everything from the current directory to the PWD (Present Working Directory) inside the container
+COPY ./rtc/. .
+
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
