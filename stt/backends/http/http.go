@@ -1,4 +1,4 @@
-package faster_whisper
+package stt_http
 
 import (
 	"bytes"
@@ -12,33 +12,33 @@ import (
 )
 
 // ensure this satisfies the interface
-var _ engine.Transcriber = (*FasterWhisperApi)(nil)
+var _ engine.Transcriber = (*STTHttpBackend)(nil)
 
-type FasterWhisperApi struct {
+type STTHttpBackend struct {
 	url string
 }
 
-type transcriptionPython struct {
+type TranscribeResponse struct {
 	Transcriptions []engine.TranscriptionSegment `json:"transcriptions"`
 }
 
-func New(url string) (*FasterWhisperApi, error) {
+func New(url string) (*STTHttpBackend, error) {
 	if url == "" {
-		return nil, errors.New(fmt.Sprintf("invalid url for FasterWhisperApi %s", url))
+		return nil, errors.New(fmt.Sprintf("invalid url for STTHttpBackend %s", url))
 	}
-	return &FasterWhisperApi{
+	return &STTHttpBackend{
 		url: url,
 	}, nil
 }
 
-func (f *FasterWhisperApi) Transcribe(audioData []float32) (engine.Transcription, error) {
+func (s *STTHttpBackend) Transcribe(audioData []float32) (engine.Transcription, error) {
 	payloadBytes, err := json.Marshal(audioData)
 	if err != nil {
 		return engine.Transcription{}, err
 	}
 
 	// Send POST request to the API
-	resp, err := http.Post(f.url, "application/json", bytes.NewBuffer(payloadBytes))
+	resp, err := http.Post(s.url, "application/json", bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return engine.Transcription{}, err
 	}
@@ -51,8 +51,8 @@ func (f *FasterWhisperApi) Transcribe(audioData []float32) (engine.Transcription
 	}
 
 	// Check the response status code
-	if resp.StatusCode == http.StatusOK {
-		transcription := transcriptionPython{}
+	if resp.StatusCode == http.StatusCreated {
+		transcription := TranscribeResponse{}
 		err = json.Unmarshal(body, &transcription)
 		if err != nil {
 			return engine.Transcription{}, err

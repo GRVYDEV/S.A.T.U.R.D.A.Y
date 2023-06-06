@@ -4,8 +4,10 @@ use (
 	./rtc
 	./client
 	./whisper-api
+    ./util
 	./tts
     ./tts/engine
+	./tts/backends/http
 	./stt/engine
 	./stt/backends/whisper.cpp
 	./stt/backends/http

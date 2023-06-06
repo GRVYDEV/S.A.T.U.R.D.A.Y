@@ -9,6 +9,10 @@ import (
 	logr "S.A.T.U.R.D.A.Y/log"
 	whisper "S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
 	"S.A.T.U.R.D.A.Y/stt/engine"
+	stt "S.A.T.U.R.D.A.Y/stt/engine"
+	shttp "S.A.T.U.R.D.A.Y/tts/backends/http"
+	tts "S.A.T.U.R.D.A.Y/tts/engine"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -20,7 +24,7 @@ var (
 
 func main() {
 	flag.Parse()
-	if !*debug {
+	if *debug {
 		logr.SetLevel(slog.LevelDebug)
 	}
 
@@ -54,7 +58,16 @@ func main() {
 		transcriptionStream <- document
 	}
 
-	engine, err := engine.New(engine.EngineParams{
+	synthesizer, err := shttp.New("http://localhost:8000/synthesize")
+	if err != nil {
+		logger.Fatal(err, "error creating http")
+	}
+
+	ttsEngine, err := tts.New(tts.EngineParams{
+		Synthesizer: synthesizer,
+	})
+
+	sttEngine, err := stt.New(stt.EngineParams{
 		Transcriber:      whisperCpp,
 		OnDocumentUpdate: onDocumentUpdate,
 	})
@@ -62,10 +75,10 @@ func main() {
 	sc, err := client.NewSaturdayClient(client.SaturdayConfig{
 		Room:                room,
 		Url:                 url,
-		SttEngine:           engine,
+		SttEngine:           sttEngine,
+		TtsEngine:           ttsEngine,
 		TranscriptionStream: transcriptionStream,
 	})
-
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}

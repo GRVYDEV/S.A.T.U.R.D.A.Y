@@ -9,7 +9,7 @@ app = FastAPI()
 
 
 class SynthesizeResponse(BaseModel):
-    sampleRate: int
+    sample_rate: int
     data: bytes
 
 
@@ -40,4 +40,4 @@ async def synthesize(request: SynthesizeRequest) -> SynthesizeResponse:
     print("running synth with text: ", request.text)
     pcm = run_synthesis(request.text)
 
-    return SynthesizeResponse(data=base64.b64encode(pcm), sampleRate=sample_rate)
+    return SynthesizeResponse(data=base64.b64encode(pcm), sample_rate=sample_rate)
