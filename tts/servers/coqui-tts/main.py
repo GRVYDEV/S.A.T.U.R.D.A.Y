@@ -31,7 +31,9 @@ def run_synthesis(text) -> bytes:
     if sys.byteorder == "big":
         arr.byteswap()
 
-    arr.tofile("audio.pcm")
+    # uncomment this to write the audio to a file and play back with
+    # ffplay -f f32le -ar 22050 -ac 1 audio.pcm to hear what it sounds like
+    # arr.tofile("audio.pcm")
     return arr.tobytes()
 
 

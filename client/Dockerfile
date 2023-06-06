@@ -6,13 +6,13 @@ RUN apt-get install pkg-config libopus-dev libopusfile-dev -y
 WORKDIR /app
 
 # Copy everything from the current directory to the PWD (Present Working Directory) inside the container
-COPY ./log/. ./log/.
-COPY ./stt/. ./stt/.
-COPY ./tts/. ./tts/.
-COPY ./client/. ./client/.
-COPY ./rtc/. ./rtc/.
-COPY ./whisper-api/. ./whisper-api/.
-COPY ./go.work .
+COPY ../log/. ./log/.
+COPY ../stt/. ./stt/.
+COPY ../tts/backends/. ./tts/backends/.
+COPY ../tts/engine/. ./tts/engine/.
+COPY ../client/. ./client/.
+COPY ../rtc/. ./rtc/.
+COPY ../go.work .
 
 WORKDIR /app/client
 
