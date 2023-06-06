@@ -5,13 +5,13 @@ import (
 	"net/url"
 	"os"
 
-	"S.A.T.U.R.D.A.Y/client"
-	logr "S.A.T.U.R.D.A.Y/log"
-	whisper "S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
-	"S.A.T.U.R.D.A.Y/stt/engine"
-	stt "S.A.T.U.R.D.A.Y/stt/engine"
-	shttp "S.A.T.U.R.D.A.Y/tts/backends/http"
-	tts "S.A.T.U.R.D.A.Y/tts/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	whisper "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	shttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http"
+	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
 
 	"golang.org/x/exp/slog"
 )

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"S.A.T.U.R.D.A.Y/util"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util"
 )
 
 func TestEncDec(t *testing.T) {

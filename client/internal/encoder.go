@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	"S.A.T.U.R.D.A.Y/util"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util"
 
 	"gopkg.in/hraban/opus.v2"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	logr "S.A.T.U.R.D.A.Y/log"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
 )
 
 // FIXME make these configurable

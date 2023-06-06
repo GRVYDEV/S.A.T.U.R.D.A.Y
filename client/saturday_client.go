@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/url"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	stt "S.A.T.U.R.D.A.Y/stt/engine"
-	tts "S.A.T.U.R.D.A.Y/tts/engine"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
 
 	"github.com/pion/webrtc/v3"
 )

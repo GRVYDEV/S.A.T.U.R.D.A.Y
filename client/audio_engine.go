@@ -5,9 +5,9 @@ import (
 	"math"
 	"time"
 
-	"S.A.T.U.R.D.A.Y/client/internal"
-	stt "S.A.T.U.R.D.A.Y/stt/engine"
-	tts "S.A.T.U.R.D.A.Y/tts/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client/internal"
+	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3/pkg/media"
@@ -86,6 +86,7 @@ func (a *AudioEngine) Start() {
 	go a.decode()
 
 	// Below is simply for testing the RTC audio sending
+	// FIXME there is an issue with it chopping off audio of the first iteration
 	if a.ttsEngine != nil {
 		go func() {
 			i := 0

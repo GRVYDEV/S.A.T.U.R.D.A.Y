@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 )
 
 // ensure this satisfies the interface

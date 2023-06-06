@@ -9,9 +9,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	"S.A.T.U.R.D.A.Y/tts/engine"
-	"S.A.T.U.R.D.A.Y/util"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util"
 )
 
 // ensure this satisfies the interface
