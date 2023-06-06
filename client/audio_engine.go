@@ -1,19 +1,21 @@
 package client
 
 import (
+	"fmt"
 	"math"
 	"time"
 
-	"S.A.T.U.R.D.A.Y/client/internal"
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client/internal"
+	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3/pkg/media"
 )
 
 const (
-	sampleRate  = engine.SampleRate // (16000)
-	channels    = 1                 // decode into 1 channel since that is what whisper.cpp wants
+	sampleRate  = stt.SampleRate // (16000)
+	channels    = 1              // decode into 1 channel since that is what whisper.cpp wants
 	frameSizeMs = 20
 )
 
@@ -35,10 +37,11 @@ type AudioEngine struct {
 	buf []byte
 
 	firstTimeStamp *uint32
-	engine         *engine.Engine
+	sttEngine      *stt.Engine
+	ttsEngine      *tts.Engine
 }
 
-func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
+func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine, error) {
 	dec, err := internal.NewOpusDecoder(sampleRate, channels)
 	if err != nil {
 		return nil, err
@@ -50,15 +53,24 @@ func NewAudioEngine(engine *engine.Engine) (*AudioEngine, error) {
 		return nil, err
 	}
 
-	return &AudioEngine{
-		rtpIn:    make(chan *rtp.Packet),
-		mediaOut: make(chan media.Sample),
-		pcm:      make([]float32, frameSize),
-		buf:      make([]byte, frameSize*2),
-		dec:      dec,
-		enc:      enc,
-		engine:   engine,
-	}, nil
+	ae := &AudioEngine{
+		rtpIn:     make(chan *rtp.Packet),
+		mediaOut:  make(chan media.Sample),
+		pcm:       make([]float32, frameSize),
+		buf:       make([]byte, frameSize*2),
+		dec:       dec,
+		enc:       enc,
+		sttEngine: sttEngine,
+		ttsEngine: ttsEngine,
+	}
+
+	if ttsEngine != nil {
+		ttsEngine.OnAudioChunk(func(chunk tts.AudioChunk) {
+			ae.Encode(chunk.Data, chunk.ChannelCount, chunk.SampleRate)
+		})
+	}
+
+	return ae, nil
 }
 
 func (a *AudioEngine) RtpIn() chan<- *rtp.Packet {
@@ -74,26 +86,26 @@ func (a *AudioEngine) Start() {
 	go a.decode()
 
 	// Below is simply for testing the RTC audio sending
-	// go func() {
-	// 	data, err := os.ReadFile("./internal/audio.pcm")
-	// 	if err != nil {
-	// 		Logger.Error(err, "error opening audio file")
-	// 		return
-	// 	}
+	// FIXME there is an issue with it chopping off audio of the first iteration
+	if a.ttsEngine != nil {
+		go func() {
+			i := 0
+			for {
+				i += 1
+				time.Sleep(time.Second * 10)
 
-	// 	pcm := internal.BinaryToFloat32(data)
+				Logger.Infof("starting tts... %d", i)
 
-	// 	for {
-	// 		if err := a.Encode(pcm, 1, 22050); err != nil {
-	// 			Logger.Error(err, "error encoding and sending")
-	// 		}
+				err := a.ttsEngine.Generate(fmt.Sprintf("Hello world this is test number %d", i))
+				if err != nil {
+					Logger.Error(err, "error generating")
+				}
 
-	// 		Logger.Info("done encoding")
+			}
 
-	// 		time.Sleep(time.Second * 10)
-	// 	}
+		}()
 
-	// }()
+	}
 }
 
 // Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
@@ -155,7 +167,7 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
 		lengthOfRecording := uint32(len(a.pcm) / (sampleRate / 1000))
 		timestampRecordingEnds := timestampMS + lengthOfRecording
-		a.engine.Write(a.pcm, timestampRecordingEnds)
+		a.sttEngine.Write(a.pcm, timestampRecordingEnds)
 		return convertToBytes(a.pcm, a.buf), nil
 	}
 }

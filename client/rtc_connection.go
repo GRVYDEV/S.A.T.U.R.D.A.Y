@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"

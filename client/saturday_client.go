@@ -4,8 +4,9 @@ import (
 	"errors"
 	"net/url"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
+	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
 
 	"github.com/pion/webrtc/v3"
 )
@@ -18,11 +19,13 @@ type SaturdayConfig struct {
 	// URL for websocket server
 	Url url.URL
 	// STT engine to generate transcriptions
-	SttEngine *engine.Engine
+	SttEngine *stt.Engine
+	// TTS engine to generate audio
+	TtsEngine *tts.Engine
 
 	// channel used to send transcription segments over the data channel
 	// any transcription segment sent on this channel with be sent over the data channel
-	TranscriptionStream chan engine.Document
+	TranscriptionStream chan stt.Document
 }
 
 type SaturdayClient struct {
@@ -33,10 +36,11 @@ type SaturdayClient struct {
 }
 
 func NewSaturdayClient(config SaturdayConfig) (*SaturdayClient, error) {
+	// TODO allow this to be nil and just disable transcriptions in that case
 	if config.SttEngine == nil {
 		return nil, errors.New("SttEngine cannot be nil")
 	}
-	ae, err := NewAudioEngine(config.SttEngine)
+	ae, err := NewAudioEngine(config.SttEngine, config.TtsEngine)
 	if err != nil {
 		return nil, err
 	}

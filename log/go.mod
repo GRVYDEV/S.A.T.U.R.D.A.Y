@@ -1,4 +1,4 @@
-module S.A.T.U.R.D.A.Y/log
+module github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log
 
 go 1.20
 

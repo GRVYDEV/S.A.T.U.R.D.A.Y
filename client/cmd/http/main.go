@@ -5,10 +5,10 @@ import (
 	"net/url"
 	"os"
 
-	"S.A.T.U.R.D.A.Y/client"
-	logr "S.A.T.U.R.D.A.Y/log"
-	shttp "S.A.T.U.R.D.A.Y/stt/backends/http"
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	shttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/http"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 
 	"golang.org/x/exp/slog"
 )

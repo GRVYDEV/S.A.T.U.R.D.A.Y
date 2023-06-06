@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	"S.A.T.U.R.D.A.Y/stt/engine"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 
 	whisper "github.com/ggerganov/whisper.cpp/bindings/go"
 )

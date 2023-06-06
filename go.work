@@ -1,12 +1,21 @@
 go 1.20
 
 use (
-	./rtc
 	./client
-	./whisper-api
-	./tts
-	./stt/engine
-	./stt/backends/whisper.cpp
-	./stt/backends/http
 	./log
+	./rtc
+	./stt/backends/http
+	./stt/backends/whisper.cpp
+	./stt/engine
+	./tts
+	./tts/backends/http
+	./tts/engine
+	./util
+	./whisper-api
+)
+
+replace (
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-00010101000000-000000000000 => ./log
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine v0.0.0-00010101000000-000000000000 => ./tts/engine
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util v0.0.0-00010101000000-000000000000 => ./util
 )

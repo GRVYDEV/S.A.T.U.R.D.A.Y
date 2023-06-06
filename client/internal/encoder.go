@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	logr "S.A.T.U.R.D.A.Y/log"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util"
 
 	"gopkg.in/hraban/opus.v2"
 )
@@ -57,7 +58,7 @@ func (o *OpusEncoder) Encode(pcm []float32, inputChannelCount, inputSampleRate i
 		return []OpusFrame{}, errors.New("cannot currently downsample channels consider encoding to 2 channel")
 	}
 	if inputChannelCount == 1 && o.channels == 2 {
-		pcm = ConvertToDualChannel(pcm)
+		pcm = util.ConvertToDualChannel(pcm)
 	}
 	if inputSampleRate != opusSampleRate {
 		pcm = Resample(pcm, inputSampleRate, opusSampleRate)

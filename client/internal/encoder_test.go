@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"os"
 	"testing"
+
+	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util"
 )
 
 func TestEncDec(t *testing.T) {
@@ -12,9 +14,9 @@ func TestEncDec(t *testing.T) {
 		t.Fatalf("error reading file %+v", err)
 	}
 
-	floats := BinaryToFloat32(data)
+	floats := util.BinaryToFloat32(data)
 
-	floats = ConvertToDualChannel(floats)
+	floats = util.ConvertToDualChannel(floats)
 
 	// 2 channel 20ms framesize
 	enc, err := NewOpusEncoder(2, 20)
@@ -23,7 +25,7 @@ func TestEncDec(t *testing.T) {
 	}
 
 	// encode to 48khz from 22.05khz
-	opusFrames, err := enc.Encode(floats, 22050)
+	opusFrames, err := enc.Encode(floats, 2, 22050)
 	if err != nil {
 		t.Fatalf("error encoding opus frames %+v", err)
 	}

@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	logr "S.A.T.U.R.D.A.Y/log"
-	whisper "S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
+	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
+	whisper "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
 
 	"github.com/gin-gonic/gin"
 )
