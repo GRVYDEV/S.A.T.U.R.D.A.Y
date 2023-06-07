@@ -51,7 +51,7 @@ func (s *STTHttpBackend) Transcribe(audioData []float32) (engine.Transcription, 
 	}
 
 	// Check the response status code
-	if resp.StatusCode == http.StatusCreated {
+	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusOK {
 		transcription := TranscribeResponse{}
 		err = json.Unmarshal(body, &transcription)
 		if err != nil {
