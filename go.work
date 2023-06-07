@@ -7,11 +7,9 @@ use (
 	./stt/backends/http
 	./stt/backends/whisper.cpp
 	./stt/engine
-	./tts
 	./tts/backends/http
 	./tts/engine
 	./util
-	./whisper-api
 )
 
 replace (
