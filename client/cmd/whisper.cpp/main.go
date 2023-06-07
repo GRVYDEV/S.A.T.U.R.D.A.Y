@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client"
 	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
@@ -67,9 +68,16 @@ func main() {
 		Synthesizer: synthesizer,
 	})
 
+	documentComposer := stt.NewDocumentComposer()
+	documentComposer.FilterSegment(func(ts stt.TranscriptionSegment) bool {
+		return ts.Text[0] == '.' || strings.ContainsAny(ts.Text, "[]()")
+	})
+
 	sttEngine, err := stt.New(stt.EngineParams{
 		Transcriber:      whisperCpp,
 		OnDocumentUpdate: onDocumentUpdate,
+		DocumentComposer: documentComposer,
+		UseVad:           true,
 	})
 
 	sc, err := client.NewSaturdayClient(client.SaturdayConfig{

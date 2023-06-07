@@ -29,7 +29,38 @@ func (dc *DocumentComposer) FilterSegment(fn func(TranscriptionSegment) bool) {
 	dc.filterSegment = fn
 }
 
+func (dc *DocumentComposer) ComposeSimple(script Transcription) (Document, uint32) {
+	doc := Document{
+		NewText:              "",
+		CurrentTranscription: "",
+	}
+	end := uint32(0)
+
+	for i, segment := range script.Transcriptions {
+		if dc.filterSegment == nil || !dc.filterSegment(segment) {
+			if doc.NewText != "" {
+				doc.NewText += " "
+			}
+
+			doc.NewText += segment.Text
+		}
+
+		if i == len(script.Transcriptions)-1 {
+			end = segment.EndTimestamp
+		}
+	}
+
+	if dc.finishedText != "" {
+		dc.finishedText += " "
+	}
+	dc.finishedText += doc.NewText
+	doc.TranscribedText = dc.finishedText
+
+	return doc, end
+}
+
 func (dc *DocumentComposer) NewTranscript(script Transcription) (Document, uint32) {
+	//	Logger.Infof("NEW TRANSCRIPT %+v", script)
 	dc.transcriptions = append(dc.transcriptions, &script)
 	return dc.ComposeDocument()
 }
@@ -60,13 +91,18 @@ func (dc *DocumentComposer) ComposeDocument() (Document, uint32) {
 					break
 				}
 			}
-			// this will filter the text if filterSegment returns true
-			if dc.filterSegment == nil || !dc.filterSegment(segment) {
-				if document.NewText != "" {
-					document.NewText += " "
-				}
-				document.NewText += segment.Text
+			if document.NewText != "" {
+				document.NewText += " "
 			}
+			document.NewText += segment.Text
+
+			// this will filter the text if filterSegment returns true
+			// if dc.filterSegment == nil || !dc.filterSegment(segment) {
+			// 	if document.NewText != "" {
+			// 		document.NewText += " "
+			// 	}
+			// 	document.NewText += segment.Text
+			// }
 			// NOTE we still add the timestamp here since we need to ensure that this stays accurate
 			dc.finishedTextTimeStamp = choosenTranscription.From + segment.EndTimestamp
 
