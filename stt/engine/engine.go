@@ -143,12 +143,12 @@ func (e *Engine) writeVAD(pcm []float32, timestamp uint32) {
 		} else if !isSpeaking && e.isSpeaking {
 			Logger.Debug("JUST STOPPED SPEAKING")
 			// TODO consider waiting for a few more samples?
-			// done speaking run inference
 			e.window = append(e.window, e.pcmWindow...)
 
 		} else if !isSpeaking && !e.isSpeaking {
 			// by having this here it gives us a bit of an opportunity to pause in our speech
 			if len(e.window) != 0 {
+				// we have not been speaking for at least 500ms now so lets run inference
 				Logger.Infof("running whisper inference with %d window length", len(e.window))
 
 				transcript, err := e.transcriber.Transcribe(e.window)
