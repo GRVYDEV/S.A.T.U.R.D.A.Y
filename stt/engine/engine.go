@@ -24,7 +24,7 @@ const (
 	windowMinSize = 2000 * sampleRateMs
 	// This determines how often we will try to run inference.
 	// We will buffer (pcmSampleRateMs * whisperSampleRate / 1000) samples and then run inference
-	pcmSampleRateMs = 5000
+	pcmSampleRateMs = 500 // FIXME PLEASE MAKE ME AN CONFIG PARAM
 	pcmWindowSize   = pcmSampleRateMs * sampleRateMs
 )
 
@@ -78,7 +78,7 @@ func (e *Engine) OnDocumentUpdate(fn func(Document)) {
 }
 
 // endTimestamp is the latest packet timestamp + len of the audio in the packet
-func (e *Engine) Write(pcm []float32, Timestamp uint32) {
+func (e *Engine) Write(pcm []float32, timestamp uint32) {
 	e.Lock()
 	defer e.Unlock()
 	if len(e.pcmWindow)+len(pcm) > pcmWindowSize {
@@ -88,8 +88,9 @@ func (e *Engine) Write(pcm []float32, Timestamp uint32) {
 	e.pcmWindow = append(e.pcmWindow, pcm...)
 	if len(e.pcmWindow) >= pcmWindowSize {
 		// TODO make this run in a go routine
-		currentTime := Timestamp + sampleWindowMs
-		transcription, err := e.runInference(currentTime)
+		// this is the end timestamp of the window
+		endTimestamp := timestamp + sampleWindowMs
+		transcription, err := e.runInference(endTimestamp)
 
 		if err == nil {
 			document, timestamp := e.documentComposer.NewTranscript(transcription)

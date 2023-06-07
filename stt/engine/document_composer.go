@@ -7,9 +7,13 @@ type Document struct {
 }
 
 type DocumentComposer struct {
-	transcriptions        []*Transcription
-	finishedText          string
+	transcriptions []*Transcription
+	finishedText   string
+	// this is the end timestamp of the most recently finished segment
 	finishedTextTimeStamp uint32
+	// this is a function that gets run everytime we want to add text to finishedText
+	// it can be used to filter phrases out of the finshed document
+	filterSegment func(TranscriptionSegment) bool // TODO explore having this filter currentText as well
 }
 
 func NewDocumentComposer() *DocumentComposer {
@@ -19,6 +23,10 @@ func NewDocumentComposer() *DocumentComposer {
 	}
 
 	return documentComposer
+}
+
+func (dc *DocumentComposer) FilterSegment(fn func(TranscriptionSegment) bool) {
+	dc.filterSegment = fn
 }
 
 func (dc *DocumentComposer) NewTranscript(script Transcription) (Document, uint32) {
@@ -52,10 +60,14 @@ func (dc *DocumentComposer) ComposeDocument() (Document, uint32) {
 					break
 				}
 			}
-			if document.NewText != "" {
-				document.NewText += " "
+			// this will filter the text if filterSegment returns true
+			if dc.filterSegment == nil || !dc.filterSegment(segment) {
+				if document.NewText != "" {
+					document.NewText += " "
+				}
+				document.NewText += segment.Text
 			}
-			document.NewText += segment.Text
+			// NOTE we still add the timestamp here since we need to ensure that this stays accurate
 			dc.finishedTextTimeStamp = choosenTranscription.From + segment.EndTimestamp
 
 			Logger.Infof("choosenTranscription.From: %d", choosenTranscription.From)

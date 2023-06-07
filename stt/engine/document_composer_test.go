@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -178,5 +179,49 @@ func TestHavingNoTwoSegementsWithinOneWindow(t *testing.T) {
 	}
 	if document.CurrentTranscription != "How is your day?" {
 		t.Errorf("Expected document text to be 'How is your day?', got %s", document.CurrentTranscription)
+	}
+}
+
+func TestFilteringSegments(t *testing.T) {
+	documentComposer := NewDocumentComposer()
+
+	documentComposer.FilterSegment(func(ts TranscriptionSegment) bool {
+		if strings.Contains(ts.Text, "foo") {
+			return true
+		}
+		return false
+	})
+
+	document, ts := documentComposer.NewTranscript(Transcription{
+		From: 100,
+		Transcriptions: []TranscriptionSegment{
+			{
+				Text:           "Hello World",
+				StartTimestamp: 0,
+				EndTimestamp:   700,
+			},
+			{
+				Text:           "this is filtered foo",
+				StartTimestamp: 700,
+				EndTimestamp:   1200,
+			},
+			{
+				Text:           "im the current",
+				StartTimestamp: 1200,
+				EndTimestamp:   1900,
+			},
+		},
+	})
+
+	if document.TranscribedText != "Hello World" {
+		t.Errorf("Expected document text to be 'Hello World', got %s", document.TranscribedText)
+	}
+
+	if document.CurrentTranscription != "im the current" {
+		t.Errorf("Expected document current text to be 'im the current', got %s", document.CurrentTranscription)
+	}
+
+	if ts != 1300 {
+		t.Errorf("Expected timestamp to be 1300, got %d", ts)
 	}
 }
