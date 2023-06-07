@@ -36,7 +36,7 @@ type AudioEngine struct {
 	// slice to hold binary encoded pcm data
 	buf []byte
 
-	firstTimeStamp *uint32
+	firstTimeStamp uint32
 	sttEngine      *stt.Engine
 	ttsEngine      *tts.Engine
 }
@@ -54,14 +54,15 @@ func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine,
 	}
 
 	ae := &AudioEngine{
-		rtpIn:     make(chan *rtp.Packet),
-		mediaOut:  make(chan media.Sample),
-		pcm:       make([]float32, frameSize),
-		buf:       make([]byte, frameSize*2),
-		dec:       dec,
-		enc:       enc,
-		sttEngine: sttEngine,
-		ttsEngine: ttsEngine,
+		rtpIn:          make(chan *rtp.Packet),
+		mediaOut:       make(chan media.Sample),
+		pcm:            make([]float32, frameSize),
+		buf:            make([]byte, frameSize*2),
+		dec:            dec,
+		enc:            enc,
+		sttEngine:      sttEngine,
+		ttsEngine:      ttsEngine,
+		firstTimeStamp: 0,
 	}
 
 	if ttsEngine != nil {
@@ -93,18 +94,14 @@ func (a *AudioEngine) Start() {
 			for {
 				i += 1
 				time.Sleep(time.Second * 10)
-
 				Logger.Infof("starting tts... %d", i)
-
 				err := a.ttsEngine.Generate(fmt.Sprintf("Hello world this is test number %d", i))
 				if err != nil {
 					Logger.Error(err, "error generating")
 				}
-
 			}
 
 		}()
-
 	}
 }
 
@@ -146,9 +143,9 @@ func (a *AudioEngine) decode() {
 			Logger.Info("rtpIn channel closed...")
 			return
 		}
-		if a.firstTimeStamp == nil {
-			Logger.Debug("Resetting timestamp bc firstTimeStamp is nil...  ", pkt.Timestamp)
-			a.firstTimeStamp = &pkt.Timestamp
+		if a.firstTimeStamp == 0 {
+			Logger.Debug("Resetting timestamp bc firstTimeStamp is 0...  ", pkt.Timestamp)
+			a.firstTimeStamp = pkt.Timestamp
 		}
 
 		if _, err := a.decodePacket(pkt); err != nil {
@@ -164,7 +161,7 @@ func (a *AudioEngine) decodePacket(pkt *rtp.Packet) (int, error) {
 		Logger.Error(err, "error decoding fb packet")
 		return 0, err
 	} else {
-		timestampMS := (pkt.Timestamp - (*a.firstTimeStamp)) / ((sampleRate / 1000) * 3)
+		timestampMS := (pkt.Timestamp - a.firstTimeStamp) / ((sampleRate / 1000) * 3)
 		lengthOfRecording := uint32(len(a.pcm) / (sampleRate / 1000))
 		timestampRecordingEnds := timestampMS + lengthOfRecording
 		a.sttEngine.Write(a.pcm, timestampRecordingEnds)

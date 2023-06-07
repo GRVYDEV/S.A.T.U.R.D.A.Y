@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 
 	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
@@ -26,6 +27,11 @@ const (
 	// We will buffer (pcmSampleRateMs * whisperSampleRate / 1000) samples and then run inference
 	pcmSampleRateMs = 500 // FIXME PLEASE MAKE ME AN CONFIG PARAM
 	pcmWindowSize   = pcmSampleRateMs * sampleRateMs
+
+	// this is an arbitrary number I picked after testing a bit
+	// feel free to play around
+	energyThresh  = 0.0005
+	silenceThresh = 0.015
 )
 
 var Logger = logr.New()
@@ -34,6 +40,7 @@ type EngineParams struct {
 	OnDocumentUpdate func(Document)
 	Transcriber      Transcriber
 	DocumentComposer *DocumentComposer
+	UseVad           bool
 }
 
 type Engine struct {
@@ -52,6 +59,9 @@ type Engine struct {
 	onDocumentUpdate func(Document)
 
 	transcriber Transcriber
+
+	useVad     bool
+	isSpeaking bool
 }
 
 func New(params EngineParams) (*Engine, error) {
@@ -70,6 +80,8 @@ func New(params EngineParams) (*Engine, error) {
 		onDocumentUpdate:     params.OnDocumentUpdate,
 		transcriber:          params.Transcriber,
 		documentComposer:     NewDocumentComposer(),
+		isSpeaking:           false,
+		useVad:               params.UseVad,
 	}, nil
 }
 
@@ -77,8 +89,92 @@ func (e *Engine) OnDocumentUpdate(fn func(Document)) {
 	e.onDocumentUpdate = fn
 }
 
-// endTimestamp is the latest packet timestamp + len of the audio in the packet
 func (e *Engine) Write(pcm []float32, timestamp uint32) {
+	if e.useVad {
+		e.writeVAD(pcm, timestamp)
+	} else {
+		e.writeClassic(pcm, timestamp)
+	}
+}
+
+// XXX DANGER XXX
+// This is highly experiemential and will probably crash in very interesting ways. I have deadlines
+// and am hacking towards what I want to demo. Use at your own risk :D
+// XXX DANGER XXX
+//
+// writeVAD only buffers audio if somone is speaking. It will run inference after the audio transitions from
+// speaking to not speaking
+func (e *Engine) writeVAD(pcm []float32, timestamp uint32) {
+	// TODO normalize PCM and see if we can make it better
+	// endTimestamp is the latest packet timestamp + len of the audio in the packet
+	// FIXME make these timestamps make sense
+	e.Lock()
+	defer e.Unlock()
+	if len(e.pcmWindow)+len(pcm) > pcmWindowSize {
+		// This shouldn't happen hopefully...
+		Logger.Infof("GOING TO OVERFLOW PCM WINDOW BY %d", len(e.pcmWindow)+len(pcm)-pcmWindowSize)
+	}
+	e.pcmWindow = append(e.pcmWindow, pcm...)
+	if len(e.pcmWindow) >= pcmWindowSize {
+		// reset window
+		defer func() {
+			e.pcmWindow = e.pcmWindow[:0]
+		}()
+
+		isSpeaking := VAD(e.pcmWindow)
+
+		defer func() {
+			e.isSpeaking = isSpeaking
+		}()
+
+		if isSpeaking && e.isSpeaking {
+			Logger.Debug("STILL SPEAKING")
+			// add to buffer and wait
+			// FIXME make sure we have space
+			e.window = append(e.window, e.pcmWindow...)
+			return
+		} else if isSpeaking && !e.isSpeaking {
+			Logger.Debug("JUST STARTED SPEAKING")
+			e.isSpeaking = isSpeaking
+			// we just started speaking, add to buffer and wait
+			// FIXME make sure we have space
+			e.window = append(e.window, e.pcmWindow...)
+			return
+		} else if !isSpeaking && e.isSpeaking {
+			Logger.Debug("JUST STOPPED SPEAKING")
+			// TODO consider waiting for a few more samples?
+			e.window = append(e.window, e.pcmWindow...)
+
+		} else if !isSpeaking && !e.isSpeaking {
+			// by having this here it gives us a bit of an opportunity to pause in our speech
+			if len(e.window) != 0 {
+				// we have not been speaking for at least 500ms now so lets run inference
+				Logger.Infof("running whisper inference with %d window length", len(e.window))
+
+				transcript, err := e.transcriber.Transcribe(e.window)
+				if err != nil {
+					Logger.Error(err, "error running inference")
+					return
+				}
+				Logger.Debugf("GOT TRANSCRIPTION %+v", transcript)
+
+				doc, _ := e.documentComposer.ComposeSimple(transcript)
+
+				if e.onDocumentUpdate != nil {
+					e.onDocumentUpdate(doc)
+				}
+
+				e.window = e.window[:0]
+			}
+			// not speaking do nothing
+			Logger.Debug("NOT SPEAKING")
+			return
+		}
+	}
+}
+
+// endTimestamp is the latest packet timestamp + len of the audio in the packet
+func (e *Engine) writeClassic(pcm []float32, timestamp uint32) {
 	e.Lock()
 	defer e.Unlock()
 	if len(e.pcmWindow)+len(pcm) > pcmWindowSize {
@@ -89,7 +185,7 @@ func (e *Engine) Write(pcm []float32, timestamp uint32) {
 	if len(e.pcmWindow) >= pcmWindowSize {
 		// TODO make this run in a go routine
 		// this is the end timestamp of the window
-		endTimestamp := timestamp + sampleWindowMs
+		endTimestamp := timestamp + uint32(len(e.window)/sampleRateMs)
 		transcription, err := e.runInference(endTimestamp)
 
 		if err == nil {
@@ -147,4 +243,34 @@ func (e *Engine) runInference(endTimestamp uint32) (Transcription, error) {
 	transcript.From = e.lastHandledTimestamp
 	return transcript, err
 
+}
+
+// NOTE This is a very rough implemntation. We should improve it :D
+// VAD performs voice activity detection on a frame of audio data.
+func VAD(frame []float32) bool {
+	// Compute frame energy
+	energy := float32(0)
+	for i := 0; i < len(frame); i++ {
+		energy += frame[i] * frame[i]
+	}
+	energy /= float32(len(frame))
+
+	// Apply energy threshold
+	if energy < energyThresh {
+		return false
+	}
+
+	// Compute frame silence
+	silence := float32(0)
+	for i := 0; i < len(frame); i++ {
+		silence += float32(math.Abs(float64(frame[i])))
+	}
+	silence /= float32(len(frame))
+
+	// Apply silence threshold
+	if silence < silenceThresh {
+		return false
+	}
+
+	return true
 }
