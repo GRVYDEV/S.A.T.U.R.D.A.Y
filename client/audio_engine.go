@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -85,24 +84,6 @@ func (a *AudioEngine) MediaOut() <-chan media.Sample {
 func (a *AudioEngine) Start() {
 	Logger.Info("Starting audio engine")
 	go a.decode()
-
-	// Below is simply for testing the RTC audio sending
-	// FIXME there is an issue with it chopping off audio of the first iteration
-	if a.ttsEngine != nil {
-		go func() {
-			i := 0
-			for {
-				i += 1
-				time.Sleep(time.Second * 10)
-				Logger.Infof("starting tts... %d", i)
-				err := a.ttsEngine.Generate(fmt.Sprintf("Hello world this is test number %d", i))
-				if err != nil {
-					Logger.Error(err, "error generating")
-				}
-			}
-
-		}()
-	}
 }
 
 // Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan

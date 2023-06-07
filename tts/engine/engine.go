@@ -33,18 +33,28 @@ func (e *Engine) OnAudioChunk(fn func(AudioChunk)) {
 // Generate will chunk the text into sections and call the synthesize function on the Synthesizer for each
 // segment. It will call onAudioChunk for each returned chunk from the synthesizer
 func (e *Engine) Generate(text string) error {
-	chunks := chunkText(text)
-	for i, textChunk := range chunks {
-		// TODO parallelize
-		chunk, err := e.synthesizer.Synthesize(textChunk)
-		if err != nil {
-			return err
-		}
+	// FIXME idk this is buggy
+	// chunks := chunkText(text)
+	// for i, textChunk := range chunks {
+	// 	// TODO parallelize
+	// 	chunk, err := e.synthesizer.Synthesize(textChunk)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if e.onAudioChunk != nil {
-			chunk.Index = i
-			e.onAudioChunk(chunk)
-		}
+	// 	if e.onAudioChunk != nil {
+	// 		chunk.Index = i
+	// 		e.onAudioChunk(chunk)
+	// 	}
+	// }
+	chunk, err := e.synthesizer.Synthesize(text)
+	if err != nil {
+		return err
+	}
+
+	if e.onAudioChunk != nil {
+		chunk.Index = 0
+		e.onAudioChunk(chunk)
 	}
 	return nil
 }
