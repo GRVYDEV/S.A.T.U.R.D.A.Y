@@ -10,7 +10,8 @@ services:
   audio_client_parser:
     restart: "on-failure"
     build:
-      dockerfile: ./client/Dockerfile
+      context: ./client
+      dockerfile: Dockerfile
     depends_on:
       - web_server
     environment:
