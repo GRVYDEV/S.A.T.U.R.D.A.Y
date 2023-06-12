@@ -9,5 +9,7 @@ build
 htmlcov
 env
 audio.pcm
+audio_test.pcm
 
 fun/
+servers/coqui-tts/test.go
