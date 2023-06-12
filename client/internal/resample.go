@@ -9,45 +9,36 @@ func Resample(input []float32, inputSampleRate, targetSampleRate int) []float32 
 
 	output := make([]float32, outputLength)
 
+	step := float64(inputLength-1) / float64(outputLength-1)
+
 	for i := 0; i < outputLength; i++ {
-		index := float32(i) * float32(inputLength-1) / float32(outputLength-1)
-		leftIndex := int(math.Floor(float64(index)))
+		index := float64(i) * step
+		lower := int(math.Floor(index))
+		upper := int(math.Ceil(index))
 
-		weights := make([]float32, 4)
-		for j := 0; j < 4; j++ {
-			d := index - float32(leftIndex+j)
-			weights[j] = cubicWeight(d)
+		if lower >= inputLength-1 {
+			lower = inputLength - 2
 		}
 
-		for j := 0; j < 4; j++ {
-			inputIndex := leftIndex + j - 1
-			if inputIndex >= 0 && inputIndex < inputLength {
-				output[i] += input[inputIndex] * weights[j]
-			}
+		// Ensure the upper index doesn't go out of bounds
+		if upper >= inputLength-1 {
+			upper = inputLength - 2
 		}
+
+		// Calculate the fractional part
+		frac := float32(index - float64(lower))
+
+		// Calculate the coefficients for the cubic spline interpolation
+		a := -0.5*input[lower] + 1.5*input[lower+1] - 1.5*input[upper] + 0.5*input[upper+1]
+		b := input[lower] - 2.5*input[lower+1] + 2*input[upper] - 0.5*input[upper+1]
+		c := -0.5*input[lower] + 0.5*input[upper]
+		d := input[lower+1]
+
+		// Perform cubic spline interpolation
+		output[i] = float32(((a*frac+b)*frac+c)*frac + d)
 	}
-
-	// Normalize the output
-	maxSample := getMaxSample(output)
-	output = normalize(output, maxSample)
 
 	return output
-}
-
-// cubicWeight calculates the weight for the cubic interpolation.
-func cubicWeight(d float32) float32 {
-	if d < 0 {
-		d = -d
-	}
-
-	if d < 1 {
-		return (1.5*d-2.5)*d*d + 1
-	} else if d < 2 {
-		d -= 2
-		return ((-0.5*d+2.5)*d-4)*d + 2
-	}
-
-	return 0
 }
 
 // getMaxSample returns the maximum absolute value in the given samples.
