@@ -1,16 +1,34 @@
 export async function getMedia() {
+  let audio, video;
+
   try {
-    return await navigator.mediaDevices.getUserMedia({
+    const audioStream = await navigator.mediaDevices.getUserMedia({
       audio: { noiseSuppression: true },
-      video: true,
     });
+    audio = audioStream.getAudioTracks()[0];
   } catch (err) {
-    console.error("error getting media", err.message);
+    console.error("error getting audio", err.message);
+    throw new Error("audio is required to use Project S.A.T.U.R.D.A.Y");
   }
+  try {
+    const videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { height: { ideal: 1080 }, width: { ideal: 1920 } },
+    });
+    video = videoStream.getVideoTracks()[0];
+  } catch (err) {
+    console.error("error getting video", err.message);
+  }
+  const stream = new MediaStream([audio]);
+  if (video) {
+    stream.addTrack(video);
+  }
+  return stream;
 }
 
 export async function getDevices() {
-  await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  } catch (err) {}
   const devices = await navigator.mediaDevices.enumerateDevices();
   const videoDevices = devices.filter((d) => d.kind === "videoinput");
   const audioDevices = devices.filter((d) => d.kind === "audioinput");
