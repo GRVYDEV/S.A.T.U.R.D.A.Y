@@ -7,13 +7,21 @@
         transform: translate(-50%, -50%);
         width: 50%;
       }
+      video {
+        transform: rotateY(180deg);
+        -webkit-transform: rotateY(180deg); /* Safari and Chrome */
+        -moz-transform: rotateY(180deg); /* Firefox */
+      }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="./index.js"></script>
   </head>
 
   <body class="bg-gray-900 antialiased">
-    <div class="flex w-1/2 flex-col mx-auto h-screen">
+    <div
+      class="flex flex-col mx-auto h-screen"
+      style="width: 640px; max-width: 640px"
+    >
       <div class="flex flex-col my-auto">
         <h1 class="text-3xl font-bold my-6 text-white">
           Project S.A.T.U.R.D.A.Y
@@ -46,6 +54,17 @@
             >
               <option selected disabled>Choose your mic</option>
             </select>
+          </div>
+        </div>
+        <div class="flex w-full my-4">
+          <div class="flex flex-col w-full flex-wrap content-end mt-auto">
+            <button
+              name="mic-mute"
+              id="mic-mute"
+              class="p-4 border block w-full border-gray-600 rounded-md text-md focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-400"
+            >
+              Mute
+            </button>
           </div>
         </div>
 

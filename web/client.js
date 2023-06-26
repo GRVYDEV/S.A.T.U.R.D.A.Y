@@ -12,6 +12,12 @@ export class Client {
     this.room = room;
     this.useDockerWs = useDockerWs;
 
+    this.muteBtn = document.getElementById("mic-mute");
+
+    this.muteBtn.addEventListener("click", this.toggleMic);
+
+    this.toggleMic();
+
     if (!noPub) {
       this.pub = new RTCPeerConnection(configuration);
       this.pubAns = false;
@@ -70,6 +76,17 @@ export class Client {
       };
     }
   }
+
+  toggleMic = () => {
+    const audioTrack = this.stream.getAudioTracks()[0];
+    audioTrack.enabled = !audioTrack.enabled;
+
+    if (audioTrack.enabled) {
+      this.muteBtn.innerText = "Mute Mic";
+    } else {
+      this.muteBtn.innerText = "Unmute Mic";
+    }
+  };
 
   async socketConnect() {
     return new Promise((resolve) => {

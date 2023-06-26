@@ -54,6 +54,9 @@ func (e *Engine) Generate(text string) error {
 
 	if e.onAudioChunk != nil {
 		chunk.Index = 0
+		data := make([]float32, 4800)
+		data = append(data, chunk.Data...)
+		chunk.Data = data
 		e.onAudioChunk(chunk)
 	}
 	return nil

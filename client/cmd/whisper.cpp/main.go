@@ -24,9 +24,10 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var debug = flag.Bool("debug", false, "print debug logs")
+const llmTime = time.Second * 2
 
 var (
+	debug  = flag.Bool("debug", false, "print debug logs")
 	logger = logr.New()
 )
 
@@ -127,7 +128,7 @@ type LLMResponse struct {
 func NewLLM(url string, ttsEngine *tts.Engine) *LLMInterface {
 	return &LLMInterface{
 		llmUrl:    url,
-		timer:     time.NewTimer(time.Second * 3),
+		timer:     time.NewTimer(llmTime),
 		prompt:    "",
 		ttsEngine: ttsEngine,
 		cancel:    make(chan int),
@@ -146,7 +147,7 @@ func (l *LLMInterface) UpdatePrompt(prompt string) {
 
 	l.prompt += prompt
 	l.timer.Stop()
-	l.timer.Reset(time.Second * 3)
+	l.timer.Reset(llmTime)
 }
 
 func (l *LLMInterface) Stop() {
