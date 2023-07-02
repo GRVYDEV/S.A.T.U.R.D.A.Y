@@ -148,8 +148,7 @@ func (a *AudioEngine) decode() {
 			return
 		}
 		if !a.shouldInfer.Load() {
-			Logger.Info("audio engine paused dropping packet")
-			return
+			continue
 		}
 		if a.firstTimeStamp == 0 {
 			Logger.Debug("Resetting timestamp bc firstTimeStamp is 0...  ", pkt.Timestamp)
