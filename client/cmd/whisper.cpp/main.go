@@ -63,26 +63,6 @@ func main() {
 		Synthesizer: synthesizer,
 	})
 
-	generator, err := thttp.New("http://localhost:9090/eva")
-	if err != nil {
-		logger.Fatal(err, "error creating http")
-	}
-
-	onTextChunk := func(chunk ttt.TextChunk) {
-		err = ttsEngine.Generate(chunk.Text)
-		if err != nil {
-			logger.Error(err, "error generating speech")
-		}
-	}
-
-	tttEngine, err := ttt.New(ttt.EngineParams{
-		Generator:   generator,
-		OnTextChunk: onTextChunk,
-	})
-	if err != nil {
-		logger.Fatal(err, "error creating tttEngine")
-	}
-
 	documentComposer := stt.NewDocumentComposer()
 	documentComposer.FilterSegment(func(ts stt.TranscriptionSegment) bool {
 		return ts.Text[0] == '.' || strings.ContainsAny(ts.Text, "[]()")
@@ -103,6 +83,26 @@ func main() {
 	})
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
+	}
+
+	generator, err := thttp.New("http://localhost:9090/eva")
+	if err != nil {
+		logger.Fatal(err, "error creating http")
+	}
+
+	onTextChunk := func(chunk ttt.TextChunk) {
+		err = ttsEngine.Generate(chunk.Text)
+		if err != nil {
+			logger.Error(err, "error generating speech")
+		}
+	}
+
+	tttEngine, err := ttt.New(ttt.EngineParams{
+		Generator:   generator,
+		OnTextChunk: onTextChunk,
+	})
+	if err != nil {
+		logger.Fatal(err, "error creating tttEngine")
 	}
 
 	pauseFunc := func() {
@@ -132,6 +132,7 @@ func main() {
 	}
 }
 
+// TODO eventually make this a general tool
 // LLMInterface will call an llm with the specified prompt every 3 seconds and
 // turn the response into audio
 type PromptBuilder struct {
