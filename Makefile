@@ -3,22 +3,24 @@ MODEL_NAME := base.en
 MODEL_FILE_NAME := ggml-$(MODEL_NAME).bin
 MODELS_DIR := models
 
+.PHONY: tts rtc client
+
 fetch-whisper:
 	@git submodule init
 	@git submodule update
 
 fetch-model:
-	@${MAKE} -C ../whisper.cpp base.en
+	@${MAKE} -C ./whisper.cpp base.en
 	@cp $(WHISPER_DIR)/models/ggml-$(MODEL_NAME).bin $(MODELS_DIR)
 
 build-whisper-lib:
 	@${MAKE} -C ./whisper.cpp libwhisper.a
 
-run-rtc:
+rtc:
 	@${MAKE} -C ./rtc run
 
-run-client:
+client:
 	@${MAKE} -C ./client run
 
-run-tester:
-	@${MAKE} -C ./tester run
+tts:
+	@${MAKE} -C ./tts/servers/coqui-tts run
