@@ -1,4 +1,4 @@
-module github.com/GRVYDEV/S.A.T.U.R.D.A.Y/whisper-api
+module github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/servers/whisper-api
 
 go 1.20
 

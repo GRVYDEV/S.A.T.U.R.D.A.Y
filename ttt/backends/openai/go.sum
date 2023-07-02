@@ -1,0 +1,8 @@
+github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-20230702135934-cfaa2370af88 h1:G5B3Xuiu0qC03KPKuvSvrOZA8guSRFKaQe9AtYMt3Io=
+github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-20230702135934-cfaa2370af88/go.mod h1:YmO3ijW8Lqjp9iGcBw825iwiMoHV8kNMgsbpvW+oFKg=
+github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/engine v0.0.0-20230702135934-cfaa2370af88 h1:NqNfKSQ/Yt61tekGtzj4eI5vF6c3vZ3V+x3TbjDr1BA=
+github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/engine v0.0.0-20230702135934-cfaa2370af88/go.mod h1:zZOcG+X8Dfq5oneoNqRB7GXyY67BjdlGqudHw1XrJ+E=
+github.com/sashabaranov/go-openai v1.12.0 h1:aRNHH0gtVfrpIaEolD0sWrLLRnYQNK4cH/bIAHwL8Rk=
+github.com/sashabaranov/go-openai v1.12.0/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 h1:k/i9J1pBpvlfR+9QsetwPyERsqu1GIbi967PQMq3Ivc=
+golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1/go.mod h1:V1LtkGg67GoY2N1AnLN78QLrzxkLyJw7RJb1gzOOz9w=

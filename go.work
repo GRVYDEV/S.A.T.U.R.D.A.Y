@@ -12,6 +12,7 @@ use (
 	./util
     ./ttt/engine
     ./ttt/backends/http
+    ./ttt/backends/openai
 )
 
 replace (

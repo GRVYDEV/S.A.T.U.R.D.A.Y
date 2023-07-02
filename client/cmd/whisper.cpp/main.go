@@ -15,7 +15,7 @@ import (
 	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 	shttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http"
 	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
-	thttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/backends/http"
+	oai "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/backends/openai"
 	ttt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/engine"
 
 	"golang.org/x/exp/slog"
@@ -32,6 +32,11 @@ func main() {
 	flag.Parse()
 	if *debug {
 		logr.SetLevel(slog.LevelDebug)
+	}
+
+	openAiToken := os.Getenv("OPENAI_TOKEN")
+	if openAiToken == "" {
+		logger.Fatal(nil, "openai token required please set the OPENAI_TOKEN environment variable")
 	}
 
 	urlEnv := os.Getenv("URL")
@@ -85,9 +90,9 @@ func main() {
 		logger.Fatal(err, "error creating saturday client")
 	}
 
-	generator, err := thttp.New("http://localhost:9090/eva")
+	generator, err := oai.New(openAiToken)
 	if err != nil {
-		logger.Fatal(err, "error creating http")
+		logger.Fatal(err, "error creating openai backend")
 	}
 
 	onTextChunk := func(chunk ttt.TextChunk) {
