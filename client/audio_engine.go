@@ -1,8 +1,8 @@
 package client
 
 import (
-	"fmt"
 	"math"
+	"sync/atomic"
 	"time"
 
 	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client/internal"
@@ -39,6 +39,9 @@ type AudioEngine struct {
 	firstTimeStamp uint32
 	sttEngine      *stt.Engine
 	ttsEngine      *tts.Engine
+
+	// shouldInfer determines if we should run TTS inference or not
+	shouldInfer atomic.Bool
 }
 
 func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine, error) {
@@ -53,6 +56,9 @@ func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine,
 		return nil, err
 	}
 
+	var shouldInfer atomic.Bool
+	shouldInfer.Store(true)
+
 	ae := &AudioEngine{
 		rtpIn:          make(chan *rtp.Packet),
 		mediaOut:       make(chan media.Sample),
@@ -63,6 +69,7 @@ func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine,
 		sttEngine:      sttEngine,
 		ttsEngine:      ttsEngine,
 		firstTimeStamp: 0,
+		shouldInfer:    shouldInfer,
 	}
 
 	if ttsEngine != nil {
@@ -85,24 +92,18 @@ func (a *AudioEngine) MediaOut() <-chan media.Sample {
 func (a *AudioEngine) Start() {
 	Logger.Info("Starting audio engine")
 	go a.decode()
+}
 
-	// Below is simply for testing the RTC audio sending
-	// FIXME there is an issue with it chopping off audio of the first iteration
-	if a.ttsEngine != nil {
-		go func() {
-			i := 0
-			for {
-				i += 1
-				time.Sleep(time.Second * 10)
-				Logger.Infof("starting tts... %d", i)
-				err := a.ttsEngine.Generate(fmt.Sprintf("Hello world this is test number %d", i))
-				if err != nil {
-					Logger.Error(err, "error generating")
-				}
-			}
+// Pause stops the text to speech inference and simply drops incoming packets
+func (a *AudioEngine) Pause() {
+	Logger.Info("Pausing tts")
+	a.shouldInfer.Swap(false)
+}
 
-		}()
-	}
+// Unpause restarts the text to speech inference
+func (a *AudioEngine) Unpause() {
+	Logger.Info("Unpausing tts")
+	a.shouldInfer.Swap(true)
 }
 
 // Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
@@ -125,6 +126,9 @@ func (a *AudioEngine) sendMedia(frames []internal.OpusFrame) {
 		// this is important to properly pace the samples
 		time.Sleep(time.Millisecond * 20)
 	}
+
+	// start inferring audio again
+	a.Unpause()
 }
 
 func convertOpusToSample(frame internal.OpusFrame) media.Sample {
@@ -142,6 +146,9 @@ func (a *AudioEngine) decode() {
 		if !ok {
 			Logger.Info("rtpIn channel closed...")
 			return
+		}
+		if !a.shouldInfer.Load() {
+			continue
 		}
 		if a.firstTimeStamp == 0 {
 			Logger.Debug("Resetting timestamp bc firstTimeStamp is 0...  ", pkt.Timestamp)

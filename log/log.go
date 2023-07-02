@@ -31,7 +31,7 @@ func New() Logger {
 		return a
 	}
 	return Logger{
-		slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource:   true,
 			ReplaceAttr: replace,
 			Level:       level,

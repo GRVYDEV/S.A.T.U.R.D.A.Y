@@ -33,18 +33,34 @@ func (e *Engine) OnAudioChunk(fn func(AudioChunk)) {
 // Generate will chunk the text into sections and call the synthesize function on the Synthesizer for each
 // segment. It will call onAudioChunk for each returned chunk from the synthesizer
 func (e *Engine) Generate(text string) error {
-	chunks := chunkText(text)
-	for i, textChunk := range chunks {
-		// TODO parallelize
-		chunk, err := e.synthesizer.Synthesize(textChunk)
-		if err != nil {
-			return err
-		}
+	// FIXME we want to chunk into small sentences to parallelize audio generation
+	// chunks := chunkText(text)
+	// for i, textChunk := range chunks {
+	// 	// TODO parallelize
+	// 	chunk, err := e.synthesizer.Synthesize(textChunk)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if e.onAudioChunk != nil {
-			chunk.Index = i
-			e.onAudioChunk(chunk)
-		}
+	// 	if e.onAudioChunk != nil {
+	// 		chunk.Index = i
+	// 		e.onAudioChunk(chunk)
+	// 	}
+	// }
+
+	chunk, err := e.synthesizer.Synthesize(text)
+	if err != nil {
+		return err
+	}
+
+	if e.onAudioChunk != nil {
+		chunk.Index = 0
+		// FIXME right now the audio sounds really bad at the beginning if we dont pad with some silence
+		// I need to dig into why this happens
+		data := make([]float32, 4800)
+		data = append(data, chunk.Data...)
+		chunk.Data = data
+		e.onAudioChunk(chunk)
 	}
 	return nil
 }
