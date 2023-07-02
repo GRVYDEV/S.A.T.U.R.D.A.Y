@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="">View Demo</a> •
+  <a href="https://youtu.be/xqEQSw2Wq54">View Demo</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y/issues">Request Features</a> •
 </p>
