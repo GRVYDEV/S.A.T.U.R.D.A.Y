@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-<a  href="https://github.com/GRVYDEV/Project-Lightspeed">
+<a  href="https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y">
     <img src="images/sat-logo.png" alt="Logo" width="250" height="250">
 </a>
   <br>
@@ -8,7 +8,7 @@
   <br>
 </h1>
 
-<h4 align="center">A toolbox for vocal computing built with <a href="https://github.com/pion">Pion</a>, <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>, and <a href="https://github.com/coqui-ai/TTS">Coqui TTS</a>. Build your own personal J.A.R.V.I.S</h4>
+<h4 align="center">A toolbox for vocal computing built with <a href="https://github.com/pion">Pion</a>, <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>, and <a href="https://github.com/coqui-ai/TTS">Coqui TTS</a>. Build your own personal, self-hosted J.A.R.V.I.S powered by WebRTC</h4>
 
 <p align="center">
     <a href="https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stargazers"><img src="https://img.shields.io/github/stars/GRVYDEV/S.A.T.U.R.D.A.Y" alt="Stars Badge"/></a>
@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="#key-features">View Demo</a> •
-  <a href="#how-to-use">Run the Demo</a> •
+  <a href="">View Demo</a> •
+  <a href="#getting-started">Getting Started</a> •
   <a href="https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y/issues">Request Features</a> •
 </p>
 
@@ -38,7 +38,7 @@
     </li>
     <li><a href="#discord">Discord</a></li>
     <li>
-      <a href="#run-the-demo">Run the Demo</a>
+      <a href="#getting-started">Getting Started</a>
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
       </ul>
@@ -60,23 +60,21 @@ Project S.A.T.U.R.D.A.Y is a toolbox for vocal computing. It provides tools to b
 
 Project S.A.T.U.R.D.A.Y is composed of tools. A tool is an abstraction that encapsulates a specific part of the vocal computing stack. There are 2 main constructs that comprise a tool:
 
-- Engine
-  An engine encapsulates the domain specific functionality of a tool. This logic should remain the same regardless of the inference backend used. For example, in the case of the STT tool the engine contains the Voice Activity Detection algorithm along with some custom buffering logic. This allows the backend to be easily changed without needing to re-write code.
+- **Engine** - An engine encapsulates the domain specific functionality of a tool. This logic should remain the same regardless of the inference backend used. For example, in the case of the STT tool the engine contains the Voice Activity Detection algorithm along with some custom buffering logic. This allows the backend to be easily changed without needing to re-write code.
 
-- Backend
-  A backend is what actually runs the AI inference. This is usually a thin wrapper but allows for more flexibility and ease of upgrade. A backend can also be written to interface with an HTTP server to allow for easy language inter-op.
+- **Backend** - A backend is what actually runs the AI inference. This is usually a thin wrapper but allows for more flexibility and ease of upgrade. A backend can also be written to interface with an HTTP server to allow for easy language inter-op.
 
 This project contains 3 main kinds of tools. The 3 main tools are STT, TTT and TTS.
 
-#### STT
+#### STT (Speech-to-Text)
 
 STT tools are the ears of the system and perform Speech-to-Text inference on incoming audio
 
-#### TTT
+#### TTT (Text-to-Text)
 
 TTT tools are the brains of the system and perform Text-to-Text inference once the audio has been transformed into Text.
 
-#### TTS
+#### TTS (Text-to-Speech)
 
 TTS tools are the mouth of the system and perform Text-to-Speech inference on the text proved by the TTT tool.
 
@@ -86,7 +84,9 @@ Here is a diagram of how the main demo currently works.
 
 <img src="images/demo-arch.png" alt="Saturday demo diagram">
 
-## Run the Demo
+## Getting started
+
+The demo that comes in this repo is your own personal, self-hosted J.A.R.V.I.S like assistant.
 
 **DISCLAIMER**: I have only tested this on M1 Pro and Max processors. We are doing a lot of local inference so the demo requires quite a bit of processing power. Your mileage may very on different operating systems and hardware. If you run into problems please open an [issue](https://github.com/GRVYDEV/S.A.T.U.R.D.A.Y/issues).
 
@@ -98,17 +98,14 @@ In order to run the demo, [Golang](https://golang.org/doc/install), [Python](htt
 
 There are 3 processes that need to be running for the demo:
 
-- RTC
-  The RTC server hosts the web page and a WebRTC server. The WebRTC server is what you connect to when you load the page and it is also what the client connects to to start listening to your audio.
-- Client
-  The Client is where all of the magic happens. When it is started it joins the RTC server and starts listening to your audio. When you start speaking it will buffer the incoming audio until you stop. Once you stop speaking it will run STT inference on that audio, pass it to the TTT tool to generate a response to your text and then pass that output to the TTS tool to turn that response into speech. There are 2 system libraries needed to use the client `pkg-config` and `opus`. On macOS these can be installed with brew:
+- **RTC** - The RTC server hosts the web page and a WebRTC server. The WebRTC server is what you connect to when you load the page and it is also what the client connects to to start listening to your audio.
+- **Client** - The Client is where all of the magic happens. When it is started it joins the RTC server and starts listening to your audio. When you start speaking it will buffer the incoming audio until you stop. Once you stop speaking it will run STT inference on that audio, pass it to the TTT tool to generate a response to your text and then pass that output to the TTS tool to turn that response into speech. There are 2 system libraries needed to use the client `pkg-config` and `opus`. On macOS these can be installed with brew:
 
 ```shell
 brew install opus pkg-config
 ```
 
-- TTS Server
-  The TTS server is where text from the TTT tool is tranformed into speech. In the demo this uses [Coqui TTS](https://github.com/coqui-ai/TTS). There are 2 system libraries that are needed for this tool `mecab` and `espeak`. On macOS they can be installed with brew:
+- **TTS** - The TTS server is where text from the TTT tool is tranformed into speech. In the demo this uses [Coqui TTS](https://github.com/coqui-ai/TTS). There are 2 system libraries that are needed for this tool `mecab` and `espeak`. On macOS they can be installed with brew:
 
 ```shell
 brew install mecab espeak
