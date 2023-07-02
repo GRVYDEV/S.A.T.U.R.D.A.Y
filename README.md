@@ -30,13 +30,11 @@
       <ul>
         <li><ul>
           <li><a href="#how-it-works">How It Works</a></li>
-          <li><a href="#diagram">Diagram</a</li>
+          <li><a href="#diagram">Diagram</a></li>
         </ul></li>
         <li><a href="#built-with">Built With</a></li>
-        <li><a href="#components">Components</a></li>
       </ul>
     </li>
-    <li><a href="#discord">Discord</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -44,6 +42,7 @@
       </ul>
     </li>
     <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#discord">Discord</a></li>
     <li><a href="#bugs">Bugs</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -68,7 +67,7 @@ This project contains 3 main kinds of tools. The 3 main tools are STT, TTT and T
 
 #### STT (Speech-to-Text)
 
-STT tools are the ears of the system and perform Speech-to-Text inference on incoming audio
+STT tools are the ears of the system and perform Speech-to-Text inference on incoming audio.
 
 #### TTT (Text-to-Text)
 
