@@ -73,6 +73,14 @@ func NewSaturdayClient(config SaturdayConfig) (*SaturdayClient, error) {
 	return s, nil
 }
 
+func (s *SaturdayClient) PauseTTS() {
+	s.ae.Pause()
+}
+
+func (s *SaturdayClient) UnpauseTTS() {
+	s.ae.Unpause()
+}
+
 func (s *SaturdayClient) OnAnswer(answer webrtc.SessionDescription) error {
 	return s.rtc.SetAnswer(answer)
 }

@@ -83,15 +83,6 @@ func main() {
 		logger.Fatal(err, "error creating tttEngine")
 	}
 
-	promptBuilder := NewPromptBuilder(llmTime, tttEngine)
-	go promptBuilder.Start()
-	defer promptBuilder.Stop()
-
-	onDocumentUpdate := func(document engine.Document) {
-		transcriptionStream <- document
-		promptBuilder.UpdatePrompt(document.NewText)
-	}
-
 	documentComposer := stt.NewDocumentComposer()
 	documentComposer.FilterSegment(func(ts stt.TranscriptionSegment) bool {
 		return ts.Text[0] == '.' || strings.ContainsAny(ts.Text, "[]()")
@@ -99,7 +90,6 @@ func main() {
 
 	sttEngine, err := stt.New(stt.EngineParams{
 		Transcriber:      whisperCpp,
-		OnDocumentUpdate: onDocumentUpdate,
 		DocumentComposer: documentComposer,
 		UseVad:           true,
 	})
@@ -114,6 +104,26 @@ func main() {
 	if err != nil {
 		logger.Fatal(err, "error creating saturday client")
 	}
+
+	pauseFunc := func() {
+		sc.PauseTTS()
+	}
+
+	unpauseFunc := func() {
+		sc.UnpauseTTS()
+	}
+
+	promptBuilder := NewPromptBuilder(llmTime, tttEngine, pauseFunc, unpauseFunc)
+
+	onDocumentUpdate := func(document engine.Document) {
+		transcriptionStream <- document
+		promptBuilder.UpdatePrompt(document.NewText)
+	}
+
+	sttEngine.OnDocumentUpdate(onDocumentUpdate)
+
+	go promptBuilder.Start()
+	defer promptBuilder.Stop()
 
 	logger.Info("Starting Saturday Client...")
 
@@ -130,15 +140,22 @@ type PromptBuilder struct {
 	prompt    string
 	cancel    chan int
 
+	// callback to pause tts inference
+	pauseFunc func()
+	// callback to unpause tts inference
+	unpauseFunc func()
+
 	sync.Mutex
 }
 
-func NewPromptBuilder(interval time.Duration, engine *ttt.Engine) *PromptBuilder {
+func NewPromptBuilder(interval time.Duration, engine *ttt.Engine, pauseFunc func(), unpauseFunc func()) *PromptBuilder {
 	return &PromptBuilder{
-		tttEngine: engine,
-		timer:     time.NewTimer(interval),
-		prompt:    "",
-		cancel:    make(chan int),
+		tttEngine:   engine,
+		timer:       time.NewTimer(interval),
+		prompt:      "",
+		cancel:      make(chan int),
+		pauseFunc:   pauseFunc,
+		unpauseFunc: unpauseFunc,
 	}
 }
 
@@ -174,23 +191,27 @@ func (p *PromptBuilder) Start() {
 	}
 }
 
-func (l *PromptBuilder) tryCallEngine() {
-	l.Lock()
+func (p *PromptBuilder) tryCallEngine() {
+	p.Lock()
 
 	// no prompt so wait again
-	if l.prompt == "" {
-		l.Unlock()
+	if p.prompt == "" {
+		p.Unlock()
 		return
 	}
 
-	currentPrompt := l.prompt
-	l.prompt = ""
+	currentPrompt := p.prompt
+	p.prompt = ""
 
-	l.Unlock()
+	p.Unlock()
+	// pause TTS inference so we dont interrupt the tts
+	p.pauseFunc()
 	// run inference
-	err := l.tttEngine.Generate(currentPrompt)
+	err := p.tttEngine.Generate(currentPrompt)
 	if err != nil {
 		logger.Error(err, "error calling tttEngine")
+		// unpause TTS inference so we dont interrupt the tts
+		p.unpauseFunc()
 		return
 	}
 

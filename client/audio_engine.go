@@ -2,6 +2,7 @@ package client
 
 import (
 	"math"
+	"sync/atomic"
 	"time"
 
 	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client/internal"
@@ -38,6 +39,9 @@ type AudioEngine struct {
 	firstTimeStamp uint32
 	sttEngine      *stt.Engine
 	ttsEngine      *tts.Engine
+
+	// shouldInfer determines if we should run TTS inference or not
+	shouldInfer atomic.Bool
 }
 
 func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine, error) {
@@ -52,6 +56,9 @@ func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine,
 		return nil, err
 	}
 
+	var shouldInfer atomic.Bool
+	shouldInfer.Store(true)
+
 	ae := &AudioEngine{
 		rtpIn:          make(chan *rtp.Packet),
 		mediaOut:       make(chan media.Sample),
@@ -62,6 +69,7 @@ func NewAudioEngine(sttEngine *stt.Engine, ttsEngine *tts.Engine) (*AudioEngine,
 		sttEngine:      sttEngine,
 		ttsEngine:      ttsEngine,
 		firstTimeStamp: 0,
+		shouldInfer:    shouldInfer,
 	}
 
 	if ttsEngine != nil {
@@ -86,6 +94,18 @@ func (a *AudioEngine) Start() {
 	go a.decode()
 }
 
+// Pause stops the text to speech inference and simply drops incoming packets
+func (a *AudioEngine) Pause() {
+	Logger.Info("Pausing tts")
+	a.shouldInfer.Swap(false)
+}
+
+// Unpause restarts the text to speech inference
+func (a *AudioEngine) Unpause() {
+	Logger.Info("Unpausing tts")
+	a.shouldInfer.Swap(true)
+}
+
 // Encode takes in raw f32le pcm, encodes it into opus RTP packets and sends those over the rtpOut chan
 func (a *AudioEngine) Encode(pcm []float32, inputChannelCount, inputSampleRate int) error {
 	opusFrames, err := a.enc.Encode(pcm, inputChannelCount, inputSampleRate)
@@ -106,6 +126,9 @@ func (a *AudioEngine) sendMedia(frames []internal.OpusFrame) {
 		// this is important to properly pace the samples
 		time.Sleep(time.Millisecond * 20)
 	}
+
+	// start inferring audio again
+	a.Unpause()
 }
 
 func convertOpusToSample(frame internal.OpusFrame) media.Sample {
@@ -122,6 +145,10 @@ func (a *AudioEngine) decode() {
 		pkt, ok := <-a.rtpIn
 		if !ok {
 			Logger.Info("rtpIn channel closed...")
+			return
+		}
+		if !a.shouldInfer.Load() {
+			Logger.Info("audio engine paused dropping packet")
 			return
 		}
 		if a.firstTimeStamp == 0 {
