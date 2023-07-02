@@ -10,6 +10,8 @@ use (
 	./tts/backends/http
 	./tts/engine
 	./util
+    ./ttt/engine
+    ./ttt/backends/http
 )
 
 replace (

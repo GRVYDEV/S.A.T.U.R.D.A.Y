@@ -1,12 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -20,6 +15,8 @@ import (
 	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 	shttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http"
 	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
+	thttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/backends/http"
+	ttt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/engine"
 
 	"golang.org/x/exp/slog"
 )
@@ -66,13 +63,33 @@ func main() {
 		Synthesizer: synthesizer,
 	})
 
-	llm := NewLLM("http://localhost:9090/eva", ttsEngine)
-	go llm.Start()
-	defer llm.Stop()
+	generator, err := thttp.New("http://localhost:9090/eva")
+	if err != nil {
+		logger.Fatal(err, "error creating http")
+	}
+
+	onTextChunk := func(chunk ttt.TextChunk) {
+		err = ttsEngine.Generate(chunk.Text)
+		if err != nil {
+			logger.Error(err, "error generating speech")
+		}
+	}
+
+	tttEngine, err := ttt.New(ttt.EngineParams{
+		Generator:   generator,
+		OnTextChunk: onTextChunk,
+	})
+	if err != nil {
+		logger.Fatal(err, "error creating tttEngine")
+	}
+
+	promptBuilder := NewPromptBuilder(llmTime, tttEngine)
+	go promptBuilder.Start()
+	defer promptBuilder.Stop()
 
 	onDocumentUpdate := func(document engine.Document) {
 		transcriptionStream <- document
-		llm.UpdatePrompt(document.NewText)
+		promptBuilder.UpdatePrompt(document.NewText)
 	}
 
 	documentComposer := stt.NewDocumentComposer()
@@ -107,67 +124,57 @@ func main() {
 
 // LLMInterface will call an llm with the specified prompt every 3 seconds and
 // turn the response into audio
-type LLMInterface struct {
-	ttsEngine *tts.Engine
+type PromptBuilder struct {
+	tttEngine *ttt.Engine
 	timer     *time.Timer
 	prompt    string
 	cancel    chan int
 
-	llmUrl string
 	sync.Mutex
 }
 
-type LLMRequest struct {
-	Prompt string `json:"prompt"`
-}
-
-type LLMResponse struct {
-	Text string `json:"text"`
-}
-
-func NewLLM(url string, ttsEngine *tts.Engine) *LLMInterface {
-	return &LLMInterface{
-		llmUrl:    url,
-		timer:     time.NewTimer(llmTime),
+func NewPromptBuilder(interval time.Duration, engine *ttt.Engine) *PromptBuilder {
+	return &PromptBuilder{
+		tttEngine: engine,
+		timer:     time.NewTimer(interval),
 		prompt:    "",
-		ttsEngine: ttsEngine,
 		cancel:    make(chan int),
 	}
 }
 
 // update the prompt and reset the timer
-func (l *LLMInterface) UpdatePrompt(prompt string) {
+func (p *PromptBuilder) UpdatePrompt(prompt string) {
 	logger.Infof("UPDATING LLM PROMPT %s", prompt)
-	l.Lock()
-	defer l.Unlock()
+	p.Lock()
+	defer p.Unlock()
 
-	if l.prompt != "" {
-		l.prompt += " "
+	if p.prompt != "" {
+		p.prompt += " "
 	}
 
-	l.prompt += prompt
-	l.timer.Stop()
-	l.timer.Reset(llmTime)
+	p.prompt += prompt
+	p.timer.Stop()
+	p.timer.Reset(llmTime)
 }
 
-func (l *LLMInterface) Stop() {
-	l.cancel <- 1
+func (p *PromptBuilder) Stop() {
+	p.cancel <- 1
 }
 
-func (l *LLMInterface) Start() {
+func (p *PromptBuilder) Start() {
 	for {
 		// wait for the timer to fire for stop to be called
 		select {
-		case <-l.timer.C:
-			l.tryCallLLM()
-		case <-l.cancel:
+		case <-p.timer.C:
+			p.tryCallEngine()
+		case <-p.cancel:
 			logger.Info("shutting down llm interface")
 			return
 		}
 	}
 }
 
-func (l *LLMInterface) tryCallLLM() {
+func (l *PromptBuilder) tryCallEngine() {
 	l.Lock()
 
 	// no prompt so wait again
@@ -181,56 +188,10 @@ func (l *LLMInterface) tryCallLLM() {
 
 	l.Unlock()
 	// run inference
-	response, err := l.callLLM(currentPrompt)
+	err := l.tttEngine.Generate(currentPrompt)
 	if err != nil {
-		logger.Error(err, "error calling llm")
+		logger.Error(err, "error calling tttEngine")
 		return
-	}
-
-	err = l.ttsEngine.Generate(response)
-	if err != nil {
-		logger.Error(err, "error generating speech")
-	}
-
-}
-
-func (l *LLMInterface) callLLM(prompt string) (string, error) {
-	var (
-		response string
-		err      error
-	)
-	logger.Infof("CALLING LLM WITH PROMPT %s", prompt)
-
-	payload, err := json.Marshal(LLMRequest{Prompt: prompt})
-	if err != nil {
-		logger.Error(err, "error marshaling to json")
-		return response, err
-	}
-
-	resp, err := http.Post(l.llmUrl, "application/json", bytes.NewBuffer(payload))
-	if err != nil {
-		logger.Error(err, "error making llm request")
-		return response, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error(err, "error reading body")
-		return response, err
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		llmResp := LLMResponse{}
-		err = json.Unmarshal(body, &llmResp)
-		if err != nil {
-			logger.Error(err, "error unmarshaling body")
-			return response, err
-		}
-
-		return llmResp.Text, err
-	} else {
-		return response, fmt.Errorf("got bad response %d", resp.StatusCode)
 	}
 
 }
