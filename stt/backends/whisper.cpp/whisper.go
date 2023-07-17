@@ -49,7 +49,9 @@ func New(modelPath string) (*WhisperModel, error) {
 
 func (w *WhisperModel) Transcribe(samples []float32) (engine.Transcription, error) {
 	start := time.Now()
-	transcription := engine.Transcription{}
+	transcription := engine.Transcription{
+		Transcriptions: make([]engine.TranscriptionSegment, 0),
+	}
 	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
 		return transcription, err
 	} else {
