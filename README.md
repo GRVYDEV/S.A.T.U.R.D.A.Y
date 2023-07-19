@@ -115,7 +115,7 @@ brew install mecab espeak
 From the root of the project run `make rtc`
 
 ```shell
-make run
+make rtc
 ```
 
 ### 2. TTS
