@@ -50,7 +50,7 @@ func New(modelPath string) (*WhisperModel, error) {
 func (w *WhisperModel) Transcribe(samples []float32) (engine.Transcription, error) {
 	start := time.Now()
 	transcription := engine.Transcription{}
-	if err := w.ctx.Whisper_full(w.params, samples, nil, nil); err != nil {
+	if err := w.ctx.Whisper_full(w.params, samples, nil, nil, nil); err != nil {
 		return transcription, err
 	} else {
 		segments := w.ctx.Whisper_full_n_segments()
