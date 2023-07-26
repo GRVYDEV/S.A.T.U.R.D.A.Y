@@ -73,6 +73,6 @@ require (
 replace internal/ws => ./internal/ws
 
 // ion hax
-replace github.com/pion/ion-sfu => github.com/GRVYDEV/ion-sfu v0.0.0-20230418020340-dbea2d314f93
+replace github.com/pion/ion-sfu => github.com/GRVYDEV/ion-sfu v0.0.0-20230726162839-b0f95c54d5d5
 
 //replace github.com/pion/ion-sfu => /Users/garrettgraves/dev/ion-sfu

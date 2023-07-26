@@ -60,8 +60,8 @@ github.com/Azure/azure-storage-blob-go v0.8.0/go.mod h1:lPI3aLPpuLTeUwh1sViKXFxw
 github.com/Azure/go-autorest v12.0.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/GRVYDEV/ion-sfu v0.0.0-20230418020340-dbea2d314f93 h1:fdrDVvOa6eC4sJaj3wjFqMPPoeRTSnW/3h9jDU/G2DQ=
-github.com/GRVYDEV/ion-sfu v0.0.0-20230418020340-dbea2d314f93/go.mod h1:FJ41uuR5Cxwh3CMVw85geBr1OgX1vPHHRr8UsC6CwaE=
+github.com/GRVYDEV/ion-sfu v0.0.0-20230726162839-b0f95c54d5d5 h1:zg2CotYENiLtfw8DXDps8+9XR2Utt85HHiO0daNw6tQ=
+github.com/GRVYDEV/ion-sfu v0.0.0-20230726162839-b0f95c54d5d5/go.mod h1:FJ41uuR5Cxwh3CMVw85geBr1OgX1vPHHRr8UsC6CwaE=
 github.com/GoogleCloudPlatform/cloudsql-proxy v0.0.0-20191009163259-e802c2cb94ae/go.mod h1:mjwGPas4yKduTyubHvD1Atl9r1rUq8DfVy+gkVvZ+oo=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Masterminds/semver/v3 v3.0.3/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
