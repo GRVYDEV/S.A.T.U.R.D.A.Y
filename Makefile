@@ -5,6 +5,11 @@ MODELS_DIR := models
 
 .PHONY: tts rtc client
 
+clean:
+	@rm $(WHISPER_DIR)/whisper.o
+	@rm $(WHISPER_DIR)/ggml.o
+	@rm $(WHISPER_DIR)/libwhisper.a
+
 fetch-whisper:
 	@git submodule init
 	@git submodule update

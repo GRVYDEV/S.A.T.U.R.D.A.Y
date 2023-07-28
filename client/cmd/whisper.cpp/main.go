@@ -11,7 +11,6 @@ import (
 	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/client"
 	logr "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log"
 	whisper "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp"
-	"github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 	stt "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine"
 	shttp "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http"
 	tts "github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine"
@@ -57,7 +56,7 @@ func main() {
 		logger.Fatal(err, "error creating whisper model")
 	}
 
-	transcriptionStream := make(chan engine.Document, 100)
+	transcriptionStream := make(chan stt.Document, 100)
 
 	synthesizer, err := shttp.New("http://localhost:8000/synthesize")
 	if err != nil {
@@ -120,7 +119,7 @@ func main() {
 
 	promptBuilder := NewPromptBuilder(llmTime, tttEngine, pauseFunc, unpauseFunc)
 
-	onDocumentUpdate := func(document engine.Document) {
+	onDocumentUpdate := func(document stt.Document) {
 		transcriptionStream <- document
 		promptBuilder.UpdatePrompt(document.NewText)
 	}

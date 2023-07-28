@@ -46,6 +46,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 		} else if t.Kind() == webrtc.RTPCodecTypeAudio {
 			kind = "audio"
 			go func() {
+				Logger.Info("starting audio read loop")
 				for {
 					pkt, _, err := t.ReadRTP()
 					if err != nil {
@@ -108,7 +109,7 @@ func NewRTCConnection(params RTCConnectionParams) (*RTCConnection, error) {
 					Logger.Error(err, "error marshalling transcript")
 					continue
 				}
-				Logger.Debugf("sending transcript %+v on data channel", transcription)
+				Logger.Infof("sending transcript %+v on data channel", transcription)
 				dc.Send(data)
 			}
 		})
