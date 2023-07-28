@@ -8,8 +8,8 @@ replace (
 )
 
 require (
-	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-00010101000000-000000000000
-	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine v0.0.0-00010101000000-000000000000
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/log v0.0.0-20230726165431-f1d355a1a072
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine v0.0.0-20230726165431-f1d355a1a072
 	github.com/ggerganov/whisper.cpp/bindings/go v0.0.0-20230716200034-399846572185
 )
 
