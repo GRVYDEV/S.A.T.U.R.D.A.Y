@@ -5,7 +5,7 @@ import "math"
 // Resample takes an input signal and resamples it to a different length using cubic interpolation.
 func Resample(input []float32, inputSampleRate, targetSampleRate int) []float32 {
 	inputLength := len(input)
-	outputLength := inputLength * (targetSampleRate / inputSampleRate)
+	outputLength := int(math.Round(float64(inputLength) * float64(float64(targetSampleRate)/float64(inputSampleRate))))
 
 	output := make([]float32, outputLength)
 
