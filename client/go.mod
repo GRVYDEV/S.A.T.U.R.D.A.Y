@@ -7,11 +7,11 @@ require (
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/http v0.0.0-20230728190023-883157995a4a
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/backends/whisper.cpp v0.0.0-20230728190023-883157995a4a
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/stt/engine v0.0.0-20230726165431-f1d355a1a072
-	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http v0.0.0-20230728190023-883157995a4a
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/backends/http v0.0.0-20230728192344-b107deb4c796
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/tts/engine v0.0.0-20230607012320-a2f6bc254fdf
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/backends/openai v0.0.0-20230726165431-f1d355a1a072
 	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/ttt/engine v0.0.0-20230726165431-f1d355a1a072
-	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util v0.0.0-20230607012320-a2f6bc254fdf
+	github.com/GRVYDEV/S.A.T.U.R.D.A.Y/util v0.0.0-20230729192628-8d783e5be014
 	github.com/gorilla/websocket v1.5.0
 	github.com/pion/rtp v1.7.13
 	github.com/pion/webrtc/v3 v3.1.25

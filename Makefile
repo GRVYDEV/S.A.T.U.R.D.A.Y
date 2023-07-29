@@ -9,6 +9,7 @@ clean:
 	@rm $(WHISPER_DIR)/whisper.o
 	@rm $(WHISPER_DIR)/ggml.o
 	@rm $(WHISPER_DIR)/libwhisper.a
+	@go clean --cache
 
 fetch-whisper:
 	@git submodule init
